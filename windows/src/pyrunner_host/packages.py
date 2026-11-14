@@ -71,6 +71,10 @@ def curated_packages() -> list[dict]:
 
 
 def pip_install(spec: str, python: str | None = None) -> dict:
+    if getattr(sys, "frozen", False):
+        raise RuntimeError(
+            "PyRunner.exe already includes its scraping packages. Installing another package needs a new build."
+        )
     spec = validate_spec(spec)
     executable = python or sys.executable
     proc = subprocess.run(

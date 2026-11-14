@@ -1,10 +1,10 @@
 # PyRunner
 
-**[Download the Android app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.1/pyrunner-android-0.1.1.apk)** (sideload APK, 0.1.1) · **[Download the Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.0/PyRunner-windows-0.1.0.zip)** (portable zip, 0.1.0) · [Releases](https://github.com/Ivankipsit/pyrunner-android/releases)
+**[Download the Android app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.2/pyrunner-android-0.1.2.apk)** (sideload APK) · **[Download the Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.2/PyRunner.exe)** · [Releases](https://github.com/Ivankipsit/pyrunner-android/releases)
 
-Android is **0.1.1**. The Windows zip is still **0.1.0** because that build did not change. What shipped, and what **0.2.0** will add, is in [CHANGELOG.md](CHANGELOG.md).
+Current version is **0.1.2**. What shipped, and what **0.2.0** will add, is in [CHANGELOG.md](CHANGELOG.md).
 
-PyRunner runs Python you type or open: scrapers and small scripts, several at once, with a live log. There is an Android app and a Windows app. They share one UI (`ui/`). The phone build is sideloaded. The Windows build is a portable folder. Unzip the Windows download and run `PyRunner.cmd`. On the phone, allow installs from your file manager, or `adb install -r pyrunner-android-0.1.1.apk`.
+PyRunner runs Python you type or open: scrapers and small scripts, several at once, with a live log. There is an Android app and a Windows app. They share one UI (`ui/`). The phone build is sideloaded. The Windows build is a portable folder. Unzip the Windows download and run `PyRunner.cmd`. On the phone, allow installs from your file manager, or `adb install -r pyrunner-android-0.1.2.apk`. On Windows, download `PyRunner.exe` and open it. WebView2, which current Windows already has, draws the window.
 
 Nothing in the app phones home. There is no analytics SDK and no crash reporter. The UI is bundled; it does not load a CDN. The Android UI WebView refuses any non-bundled URL. A script you run can still use the network. That is the script, not the app.
 
@@ -131,7 +131,7 @@ Desktop tests cover the library, streaming, cooperative stop, process kill while
 ## GitHub Actions
 
 - `.github/workflows/android-debug.yml` builds the debug APK and uploads it.
-- `.github/workflows/windows.yml` runs the pytest suite on Linux and, on `windows-latest`, builds `PyRunner-windows.zip`.
+- `.github/workflows/windows.yml` runs the pytest suite on Linux and, on `windows-latest`, builds `PyRunner.exe`.
 
 ## Layout
 

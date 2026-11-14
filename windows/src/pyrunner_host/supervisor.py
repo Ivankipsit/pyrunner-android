@@ -283,7 +283,7 @@ class Supervisor:
             parts.append(existing)
         if parts:
             env["PYTHONPATH"] = os.pathsep.join(parts)
-        command = [self.python, "-u", str(run.script_path)]
+        command = _launch_command(self.python, run.script_path)
         kwargs: dict = {
             "cwd": cwd,
             "stdout": subprocess.PIPE,
@@ -398,6 +398,13 @@ class Supervisor:
     def _public(self, run_id: str) -> dict:
         with self._lock:
             return self._get(run_id).public()
+
+
+def _launch_command(python: str, script: Path) -> list[str]:
+    """Frozen PyRunner.exe has no separate interpreter, so it reruns itself."""
+    if getattr(sys, "frozen", False):
+        return [sys.executable, "--script", str(script)]
+    return [python, "-u", str(script)]
 
 
 def _is_dir(path: str | None) -> bool:
