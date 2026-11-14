@@ -38,6 +38,9 @@ METHODS = (
     "agentPull",
     "agentDelete",
     "agentAsk",
+    "agentBridgeInfo",
+    "agentSync",
+    "agentResolve",
 )
 
 
@@ -49,6 +52,7 @@ class HostApi:
         open_file: Callable[[], dict | None],
         platform_name: str,
         distribution: str = "portable",
+        bridge=None,
     ):
         self.library = library
         self.supervisor = supervisor
@@ -58,6 +62,7 @@ class HostApi:
         self._probe_lock = threading.Lock()
         self._probe_running = False
         self._agent = None
+        self.bridge = bridge
 
     def invoke(self, request_json: str) -> str:
         try:
@@ -132,6 +137,18 @@ class HostApi:
                 str(params.get("prompt") or ""),
                 str(params.get("script") or ""),
             )
+        if method == "agentBridgeInfo":
+            if self.bridge is None:
+                return {"enabled": False}
+            return self.bridge.public()
+        if method == "agentSync":
+            if self.bridge is None:
+                return {"enabled": False}
+            return self.bridge.sync(str(params.get("name") or ""), str(params.get("source") or ""))
+        if method == "agentResolve":
+            if self.bridge is None:
+                raise RuntimeError("A local coding agent connects on Windows only")
+            return self.bridge.resolve(_required_str(params, "id"), bool(params.get("approved")))
         raise ValueError(f"Unknown method: {method}")
 
     def capabilities(self) -> dict:

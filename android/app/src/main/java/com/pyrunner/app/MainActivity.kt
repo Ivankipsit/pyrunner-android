@@ -231,6 +231,9 @@ class MainActivity : ComponentActivity() {
             "This phone uses the built-in helper. Download or delete a model on Windows. That stays on 127.0.0.1.",
         )
         "agentAsk" -> throw IllegalArgumentException("Ask the built-in helper on this phone. It does not call a model.")
+        "agentBridgeInfo" -> buildJsonObject { put("enabled", false) }
+        "agentSync" -> buildJsonObject { put("enabled", false) }
+        "agentResolve" -> throw IllegalArgumentException("A local coding agent connects on Windows only.")
         "requestBatteryExemption" -> {
             val intent = Intent(
                 Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,

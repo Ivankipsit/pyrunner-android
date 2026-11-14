@@ -2,6 +2,17 @@
 
 Versions match the app version in the Android `versionName` and the Windows package. Downloads for a version are on the [releases page](https://github.com/Ivankipsit/pyrunner-android/releases).
 
+## 0.1.6
+
+- On Windows, a coding agent on this PC can read the open script and propose a new one at `127.0.0.1`. The port and token are in `agent-bridge.json`. The script is not run until you press Approve.
+- Library rows show the script name, then the buttons, then the packages, so the name is no longer squeezed off the screen.
+- The phone Agent screen keeps the built-in helper and the scraper steps. The Qwen download cards stay on Windows.
+
+Installers:
+
+- [Android APK](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.6/pyrunner-android-0.1.6.apk)
+- [Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.6/PyRunner.exe)
+
 ## 0.1.5
 
 - The script name has its own row. New, Open, Save, and Run are on the next row.
