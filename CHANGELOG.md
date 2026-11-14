@@ -2,6 +2,17 @@
 
 Versions match the app version in the Android `versionName` and the Windows package. Downloads for a version are on the [releases page](https://github.com/Ivankipsit/pyrunner-android/releases).
 
+## 0.1.3
+
+- The Android status bar and navigation bar no longer cover the page. The app is padded inside those bars, including a display cutout.
+- Runs, Library, Device, and Agent each have a Close button that returns to the editor. A screen that is closed stays closed.
+- Output is its own full-height view, on Android and Windows. Run opens it. The editor uses the rest of the screen for the code.
+
+Installers:
+
+- [Android APK](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.3/pyrunner-android-0.1.3.apk)
+- [Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.3/PyRunner.exe)
+
 ## 0.1.2
 
 - Android opens the editor. Launch no longer crashes while coloring the status bar, which happened before the window existed on Android 15. The page, stylesheet, and scripts are read from the APK. WebView is not asked to load them as `file://`, and it is not allowed to fetch them from the network.
