@@ -556,6 +556,7 @@
     setName(script.name);
     setEditorValue(script.source);
     show("editor");
+    refreshFileLine();
   }
 
   async function runSaved(id) {
@@ -598,6 +599,36 @@
       if (script.id === saved.id) script.source = current;
     });
     if (state.view === "library") renderLibrary();
+    invoke("adoptFiles", { scriptId: saved.id }).then(refreshFileLine).catch(() => {});
+  }
+
+  function refreshFileLine() {
+    const line = $("file-line");
+    if (!line) return;
+    invoke("listFiles", { scriptId: state.editorId }).then((result) => {
+      const names = (result && result.names) || [];
+      line.hidden = names.length === 0;
+      line.textContent = names.length ? "With this script: " + names.join(", ") : "";
+    }).catch(() => {});
+  }
+
+  async function importFiles() {
+    const result = await invoke("importFiles", { scriptId: state.editorId });
+    if (!result || result.cancelled) return;
+    const names = result.names || [];
+    banner(names.length ? "Imported " + names.join(", ") + ". The next run can read these files." : "No files imported.", "info");
+    refreshFileLine();
+  }
+
+  async function exportFiles() {
+    const result = await invoke("exportFiles", {
+      scriptId: state.editorId,
+      name: $("script-name").value || "notes.txt",
+      content: editor ? editor.getValue() : "",
+      runId: state.activeRunId,
+    });
+    if (!result || result.cancelled) return;
+    banner("Saved " + (result.names || []).join(", "), "info");
   }
 
   function fresh() {
@@ -607,6 +638,7 @@
     setEditorValue(DEFAULT_SOURCE);
     state.dirty = true;
     showDirty();
+    refreshFileLine();
   }
 
   async function openFile() {
@@ -967,7 +999,9 @@
   });
   $("btn-new").addEventListener("click", fresh);
   $("btn-open").addEventListener("click", () => openFile().catch(showError));
+  $("btn-import").addEventListener("click", () => importFiles().catch(showError));
   $("btn-save").addEventListener("click", () => save().catch(showError));
+  $("btn-export").addEventListener("click", () => exportFiles().catch(showError));
   $("btn-run").addEventListener("click", () => runEditor().catch(showError));
   $("btn-stop").addEventListener("click", () => {
     if (state.activeRunId) act("stop", state.activeRunId);

@@ -7,6 +7,7 @@ import os
 import sys
 import threading
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from pyrunner_host import __version__
@@ -41,6 +42,10 @@ METHODS = (
     "agentBridgeInfo",
     "agentSync",
     "agentResolve",
+    "importFiles",
+    "listFiles",
+    "exportFiles",
+    "adoptFiles",
 )
 
 
@@ -53,6 +58,8 @@ class HostApi:
         platform_name: str,
         distribution: str = "portable",
         bridge=None,
+        pick_imports: Callable[[], list[str]] | None = None,
+        pick_folder: Callable[[], str | None] | None = None,
     ):
         self.library = library
         self.supervisor = supervisor
@@ -63,6 +70,8 @@ class HostApi:
         self._probe_running = False
         self._agent = None
         self.bridge = bridge
+        self.pick_imports = pick_imports or (lambda: [])
+        self.pick_folder = pick_folder or (lambda: None)
 
     def invoke(self, request_json: str) -> str:
         try:
@@ -149,6 +158,17 @@ class HostApi:
             if self.bridge is None:
                 raise RuntimeError("A local coding agent connects on Windows only")
             return self.bridge.resolve(_required_str(params, "id"), bool(params.get("approved")))
+        if method == "importFiles":
+            return self._import_files(params.get("scriptId"))
+        if method == "listFiles":
+            return self._list_files(params.get("scriptId"))
+        if method == "exportFiles":
+            return self._export_files(params)
+        if method == "adoptFiles":
+            from pyrunner_host.filesbox import adopt
+
+            names = adopt(self.supervisor.root, _required_str(params, "scriptId"))
+            return {"names": names}
         raise ValueError(f"Unknown method: {method}")
 
     def capabilities(self) -> dict:
@@ -216,6 +236,44 @@ class HostApi:
 
         threading.Thread(target=work, name="pyrunner-probe", daemon=True).start()
         return {"started": True}
+
+    def _import_files(self, script_id: str | None) -> dict:
+        from pyrunner_host.filesbox import inbox_dir, store_file
+
+        chosen = self.pick_imports() or []
+        if not chosen:
+            return {"cancelled": True, "names": []}
+        folder = inbox_dir(self.supervisor.root, script_id if isinstance(script_id, str) else None)
+        names = []
+        for item in chosen:
+            path = Path(item)
+            names.append(store_file(folder, path.name, path.read_bytes()))
+        return {"cancelled": False, "names": names}
+
+    def _list_files(self, script_id: str | None) -> dict:
+        from pyrunner_host.filesbox import inbox_dir, list_files
+
+        folder = inbox_dir(self.supervisor.root, script_id if isinstance(script_id, str) else None)
+        return {"names": list_files(folder)}
+
+    def _export_files(self, params: dict) -> dict:
+        from pyrunner_host.filesbox import export_to
+
+        folder_text = self.pick_folder()
+        if not folder_text:
+            return {"cancelled": True, "names": []}
+        extras: list[Path] = []
+        run_id = params.get("runId")
+        if isinstance(run_id, str) and run_id:
+            try:
+                work = self.supervisor.work_dir(run_id)
+            except KeyError:
+                work = None
+            if work is not None and work.is_dir():
+                extras = [path for path in work.iterdir() if path.is_file()]
+        content = str(params.get("content") or "").encode("utf-8")
+        names = export_to(Path(folder_text), str(params.get("name") or "notes.txt"), content, extras)
+        return {"cancelled": False, "folder": folder_text, "names": names}
 
     def agent(self):
         if self._agent is None:

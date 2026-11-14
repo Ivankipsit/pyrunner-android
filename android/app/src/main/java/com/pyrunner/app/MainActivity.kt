@@ -21,6 +21,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.util.Base64
 import android.webkit.WebViewClient
+import androidx.documentfile.provider.DocumentFile
 import java.io.IOException
 import android.view.ViewGroup
 import android.view.WindowInsetsController
@@ -57,10 +58,31 @@ class MainActivity : ComponentActivity() {
     private var runService: RunService? = null
     private val bound = CountDownLatch(1)
     private var openFuture: CompletableFuture<Uri?>? = null
+    private var importFuture: CompletableFuture<List<Uri>>? = null
+    private var treeFuture: CompletableFuture<Uri?>? = null
 
     private val openDoc = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         openFuture?.complete(uri)
         openFuture = null
+    }
+
+    private val openMany = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        importFuture?.complete(uris ?: emptyList())
+        importFuture = null
+    }
+
+    private val openTree = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            } catch (_: Exception) {
+            }
+        }
+        treeFuture?.complete(uri)
+        treeFuture = null
     }
 
     private val connection = object : ServiceConnection {
@@ -163,6 +185,20 @@ class MainActivity : ComponentActivity() {
             buildJsonObject { put("deleted", true) }
         }
         "openFile" -> openFile()
+        "importFiles" -> importFiles(Jsons.text(params, "scriptId"))
+        "listFiles" -> buildJsonObject {
+            put("names", buildJsonArray {
+                engine().listImported(Jsons.text(params, "scriptId")).forEach { add(it) }
+            })
+        }
+        "exportFiles" -> exportFiles(params)
+        "adoptFiles" -> buildJsonObject {
+            put("names", buildJsonArray {
+                engine().adoptInbox(
+                    Jsons.text(params, "scriptId") ?: throw IllegalArgumentException("scriptId is required"),
+                ).forEach { add(it) }
+            })
+        }
         "run" -> runJson(engine().start(
             Jsons.text(params, "name") ?: "untitled.py",
             Jsons.text(params, "source") ?: throw IllegalArgumentException("source is required"),
@@ -244,6 +280,93 @@ class MainActivity : ComponentActivity() {
         }
         "pipInstall" -> throw IllegalArgumentException("pip install at runtime is only available on the desktop build")
         else -> throw IllegalArgumentException("Unknown method: $method")
+    }
+
+    private fun importFiles(scriptId: String?): JsonObject {
+        val uris = pickDocuments()
+        if (uris.isEmpty()) return buildJsonObject {
+            put("cancelled", true)
+            put("names", buildJsonArray { })
+        }
+        val names = mutableListOf<String>()
+        for (uri in uris) {
+            val bytes = contentResolver.openInputStream(uri)?.use { readCapped(it, FileNames.MAX_BYTES) }
+                ?: continue
+            try {
+                names.add(engine().saveImported(scriptId, displayName(uri), bytes))
+            } catch (_: Exception) {
+            }
+        }
+        return buildJsonObject {
+            put("cancelled", false)
+            put("names", buildJsonArray { names.forEach { add(it) } })
+        }
+    }
+
+    private fun exportFiles(params: kotlinx.serialization.json.JsonObject): JsonObject {
+        val treeUri = pickFolder() ?: return buildJsonObject {
+            put("cancelled", true)
+            put("names", buildJsonArray { })
+        }
+        val tree = DocumentFile.fromTreeUri(this, treeUri) ?: throw IllegalArgumentException("Could not open that folder")
+        val written = mutableListOf<String>()
+        val runId = Jsons.text(params, "runId")
+        if (!runId.isNullOrBlank()) {
+            try {
+                for (file in engine().outputFiles(runId)) {
+                    writeDocument(tree, file.name, file.readBytes())
+                    written.add(FileNames.filename(file.name))
+                }
+            } catch (_: Exception) {
+            }
+        }
+        val name = FileNames.filename(Jsons.text(params, "name") ?: "notes.txt")
+        val content = (Jsons.text(params, "content") ?: "").toByteArray(Charsets.UTF_8)
+        if (content.size > FileNames.MAX_BYTES) throw IllegalArgumentException("File is larger than 8 MB")
+        writeDocument(tree, name, content)
+        if (name !in written) written.add(name)
+        return buildJsonObject {
+            put("cancelled", false)
+            put("folder", treeUri.toString())
+            put("names", buildJsonArray { written.forEach { add(it) } })
+        }
+    }
+
+    private fun writeDocument(tree: DocumentFile, name: String, bytes: ByteArray) {
+        val safe = FileNames.filename(name)
+        tree.findFile(safe)?.delete()
+        val created = tree.createFile("application/octet-stream", safe)
+            ?: throw IllegalArgumentException("Could not create $safe")
+        contentResolver.openOutputStream(created.uri)?.use { it.write(bytes) }
+            ?: throw IllegalArgumentException("Could not write $safe")
+    }
+
+    private fun pickDocuments(): List<Uri> {
+        val future = CompletableFuture<List<Uri>>()
+        runOnUiThread {
+            importFuture?.complete(emptyList())
+            importFuture = future
+            openMany.launch(arrayOf("*/*"))
+        }
+        return try {
+            future.get(5, TimeUnit.MINUTES)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun pickFolder(): Uri? {
+        val future = CompletableFuture<Uri?>()
+        runOnUiThread {
+            treeFuture?.complete(null)
+            treeFuture = future
+            openTree.launch(null)
+        }
+        return try {
+            future.get(5, TimeUnit.MINUTES)
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun openFile(): JsonObject {

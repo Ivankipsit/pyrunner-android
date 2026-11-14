@@ -61,6 +61,8 @@ def _run_window() -> int:
         open_file=lambda: _pick_file(holder["window"]),
         platform_name=desktop_platform(),
         bridge=bridge,
+        pick_imports=lambda: _pick_imports(holder["window"]),
+        pick_folder=lambda: _pick_folder(holder["window"]),
     )
     index = ui_dir() / "index.html"
     if not index.is_file():
@@ -92,6 +94,35 @@ def _seed(library: ScriptLibrary) -> None:
     if desktop.is_dir():
         files.extend(sorted(desktop.glob("*.py")))
     library.seed_if_empty(files)
+
+
+def _dialog_kind(window, folder: bool):
+    import webview
+
+    dialog = getattr(webview, "FileDialog", None)
+    if dialog is not None:
+        return dialog.FOLDER if folder else dialog.OPEN
+    return webview.FOLDER_DIALOG if folder else webview.OPEN_DIALOG
+
+
+def _pick_imports(window) -> list[str]:
+    kind = _dialog_kind(window, False)
+    try:
+        chosen = window.create_file_dialog(kind, allow_multiple=True, file_types=("All files (*.*)",))
+    except TypeError:
+        chosen = window.create_file_dialog(kind, allow_multiple=True)
+    return [str(item) for item in chosen] if chosen else []
+
+
+def _pick_folder(window) -> str | None:
+    kind = _dialog_kind(window, True)
+    try:
+        chosen = window.create_file_dialog(kind)
+    except TypeError:
+        return None
+    if not chosen:
+        return None
+    return str(chosen[0])
 
 
 def _pick_file(window) -> dict | None:

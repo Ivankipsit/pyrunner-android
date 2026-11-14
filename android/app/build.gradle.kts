@@ -63,8 +63,8 @@ android {
         applicationId = "com.pyrunner.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.1.6"
+        versionCode = 8
+        versionName = "0.1.7"
         ndk {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
@@ -122,6 +122,7 @@ chaquopy {
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-ktx:1.9.2")
+    implementation("androidx.documentfile:documentfile:1.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     testImplementation("junit:junit:4.13.2")
 }
