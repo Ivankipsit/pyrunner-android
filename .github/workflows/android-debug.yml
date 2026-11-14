@@ -23,7 +23,11 @@ jobs:
           uv python install 3.13
           echo "PYRUNNER_BUILD_PYTHON=$(uv python find 3.13)" >> "$GITHUB_ENV"
 
-      - uses: android-actions/setup-android@v3
+      # v3 still installs the removed SDK "tools" package and fails with
+      # "Failed to find package 'tools'". v4 installs platform-tools only.
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
 
       - name: Install SDK packages
         run: |
