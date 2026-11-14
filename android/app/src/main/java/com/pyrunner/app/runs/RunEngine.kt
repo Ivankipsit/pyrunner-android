@@ -14,6 +14,7 @@ import android.os.Message
 import android.os.Messenger
 import android.os.Process
 import android.os.RemoteException
+import com.pyrunner.app.FileNames
 import com.pyrunner.app.Jsons
 import com.pyrunner.app.NameRules
 import java.io.File
@@ -75,6 +76,7 @@ class RunEngine(private val service: RunService) {
             val record = store.create(safe, scriptId)
             val work = store.workDir(record.id)
             File(work, "main.py").writeText(source)
+            FileNames.copyInto(work, inboxDir(scriptId))
             imageBaseline[record.id] = LiveFiles.snapshot(work)
             record
         }
@@ -150,6 +152,38 @@ class RunEngine(private val service: RunService) {
     fun listRuns(): List<RunRecord> = store.list()
 
     fun readLog(id: String, maxChars: Int): LogSlice = store.readLog(id, maxChars)
+
+    fun inboxDir(scriptId: String?): File {
+        val folder = File(service.filesDir, "inbox/" + FileNames.inboxKey(scriptId))
+        folder.mkdirs()
+        return folder
+    }
+
+    fun saveImported(scriptId: String?, name: String, bytes: ByteArray): String {
+        if (bytes.size > FileNames.MAX_BYTES) throw IllegalArgumentException("File is larger than 8 MB")
+        val safe = FileNames.filename(name)
+        File(inboxDir(scriptId), safe).writeBytes(bytes)
+        return safe
+    }
+
+    fun listImported(scriptId: String?): List<String> = FileNames.listFiles(inboxDir(scriptId))
+
+    fun adoptInbox(scriptId: String): List<String> {
+        val scratch = inboxDir(null)
+        val dest = inboxDir(scriptId)
+        val moved = ArrayList<String>()
+        for (name in FileNames.listFiles(scratch)) {
+            File(scratch, name).copyTo(File(dest, name), overwrite = true)
+            File(scratch, name).delete()
+            moved.add(name)
+        }
+        return moved
+    }
+
+    fun outputFiles(runId: String): List<File> {
+        val work = store.workDir(runId)
+        return FileNames.listFiles(work).map { File(work, it) }
+    }
 
     fun listArtifacts(id: String): List<LiveFiles.ImageFile> {
         store.get(id) ?: throw IllegalArgumentException("Unknown run")

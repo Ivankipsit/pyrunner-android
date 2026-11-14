@@ -110,6 +110,9 @@ class Supervisor:
         (run_dir / "log.txt").write_text("", encoding="utf-8")
         if os.name == "nt":
             (work / "sitecustomize.py").write_text(WINDOWS_SITE, encoding="utf-8")
+        from pyrunner_host.filesbox import copy_into, inbox_dir
+
+        copy_into(work, inbox_dir(self.root, script_id))
         from pyrunner_host.artifacts import snapshot
 
         opened = origin_dir if _is_dir(origin_dir) else None
@@ -162,6 +165,10 @@ class Supervisor:
         if proc is not None and proc.poll() is None:
             _kill_process(proc)
         return self._public(run_id)
+
+    def work_dir(self, run_id: str) -> Path:
+        with self._lock:
+            return self._get(run_id).work_dir
 
     def list_runs(self) -> list[dict]:
         with self._lock:

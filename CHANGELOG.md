@@ -2,6 +2,16 @@
 
 Versions match the app version in the Android `versionName` and the Windows package. Downloads for a version are on the [releases page](https://github.com/Ivankipsit/pyrunner-android/releases).
 
+## 0.1.7
+
+- Import copies files of any type into the script's folder. The next run can read them, so `index.html` can sit beside the script.
+- Save to writes the editor file, keeping its extension, plus files the script created, into a folder you choose. On the phone that folder is one you pick. On Windows it is a normal folder.
+
+Installers:
+
+- [Android APK](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.7/pyrunner-android-0.1.7.apk)
+- [Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.7/PyRunner.exe)
+
 ## 0.1.6
 
 - On Windows, a coding agent on this PC can read the open script and propose a new one at `127.0.0.1`. The port and token are in `agent-bridge.json`. The script is not run until you press Approve.

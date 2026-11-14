@@ -1,5 +1,6 @@
 package com.pyrunner.app
 
+import com.pyrunner.app.FileNames
 import com.pyrunner.app.library.ScriptStore
 import com.pyrunner.app.runs.LiveFiles
 import com.pyrunner.app.runs.RunStore
@@ -119,5 +120,19 @@ class HostLogicTest {
         assertThrows(IllegalArgumentException::class.java) { LiveFiles.read(root, "../pic.png") }
         assertThrows(IllegalArgumentException::class.java) { LiveFiles.read(root, "images/../../pic.png") }
         assertThrows(IllegalArgumentException::class.java) { LiveFiles.read(root, "notes.txt") }
+    }
+
+    @Test
+    fun filesKeepTheirExtensionAndAreCopiedIntoARun() {
+        assertEquals("index.html", FileNames.filename("index.html"))
+        assertEquals("notes.txt", FileNames.filename("folder/notes.txt"))
+        assertEquals("secret.html", FileNames.filename("../secret.html"))
+        assertThrows(IllegalArgumentException::class.java) { FileNames.filename("..") }
+        val inbox = File.createTempFile("inbox", "").apply { delete(); mkdirs() }
+        val work = File.createTempFile("workdir", "").apply { delete(); mkdirs() }
+        File(inbox, "index.html").writeText("<b>ok</b>", Charsets.UTF_8)
+        FileNames.copyInto(work, inbox)
+        assertEquals("<b>ok</b>", File(work, "index.html").readText())
+        assertEquals(listOf("index.html"), FileNames.listFiles(work))
     }
 }
