@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>PyRunner</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div id="shell">
+    <aside id="rail">
+      <div class="brand">Py<span>Runner</span></div>
+      <nav id="nav">
+        <button type="button" data-view="editor" class="active">Editor</button>
+        <button type="button" data-view="runs" id="nav-runs">Runs</button>
+        <button type="button" data-view="library">Library</button>
+        <button type="button" data-view="device">Device</button>
+        <button type="button" data-view="agent">Agent</button>
+      </nav>
+    </aside>
+    <div id="stage">
+      <div id="banner" hidden></div>
+      <section id="view-editor">
+        <div class="toolbar">
+          <input id="script-name" spellcheck="false" aria-label="Script name" />
+          <span id="dirty" hidden>unsaved</span>
+          <div class="spacer"></div>
+          <button type="button" id="btn-new">New</button>
+          <button type="button" id="btn-open">Open</button>
+          <button type="button" id="btn-save">Save</button>
+          <button type="button" id="btn-run" class="primary">Run</button>
+        </div>
+        <div id="editor-wrap">
+          <div id="editor"></div>
+          <div id="editor-output">
+            <div class="output-bar">
+              <span id="editor-run-label">Output</span>
+              <div class="spacer"></div>
+              <button type="button" id="btn-stop" disabled>Stop</button>
+              <button type="button" id="btn-kill" disabled>Kill</button>
+            </div>
+            <pre id="editor-log"></pre>
+          </div>
+        </div>
+      </section>
+      <section id="view-runs" hidden>
+        <div class="split">
+          <div id="run-list"></div>
+          <div class="log-pane">
+            <div class="output-bar"><span id="run-label">No run selected</span></div>
+            <pre id="run-log"></pre>
+          </div>
+        </div>
+      </section>
+      <section id="view-library" hidden>
+        <div class="toolbar">
+          <input id="lib-filter" placeholder="Filter scripts" aria-label="Filter scripts" />
+        </div>
+        <div id="lib-list"></div>
+      </section>
+      <section id="view-device" hidden>
+        <div id="device"></div>
+      </section>
+      <section id="view-agent" hidden>
+        <div id="agent" class="prose"></div>
+      </section>
+    </div>
+  </div>
+  <script src="vendor/codemirror-bundle.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

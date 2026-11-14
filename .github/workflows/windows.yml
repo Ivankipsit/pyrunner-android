@@ -1,0 +1,37 @@
+name: Windows build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Test the desktop host
+        working-directory: windows
+        run: |
+          uv sync --group dev
+          uv run pytest
+
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Package a portable build
+        working-directory: windows
+        run: |
+          uv python install 3.13
+          uv sync --python 3.13 --all-groups --extra browsers
+          uv run pytest
+          uv run python build_portable.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pyrunner-windows
+          path: windows/dist/PyRunner-windows.zip
+          if-no-files-found: error

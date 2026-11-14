@@ -1,0 +1,18 @@
+{
+  "name": "pyrunner-ui",
+  "private": true,
+  "scripts": {
+    "build": "esbuild editor/entry.js --bundle --minify --format=iife --outfile=vendor/codemirror-bundle.js --legal-comments=none --banner:js=\"/* CodeMirror 6, MIT license. See vendor/NOTICE. */\""
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.8.0",
+    "@codemirror/lang-python": "^6.1.7",
+    "@codemirror/language": "^6.10.0",
+    "@codemirror/state": "^6.5.0",
+    "@codemirror/theme-one-dark": "^6.1.2",
+    "@codemirror/view": "^6.36.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

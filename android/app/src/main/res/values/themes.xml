@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.PyRunner" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:statusBarColor">#14160F</item>
+        <item name="android:navigationBarColor">#14160F</item>
+        <item name="android:windowBackground">#14160F</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
