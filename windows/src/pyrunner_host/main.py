@@ -51,11 +51,16 @@ def _run_window() -> int:
         window.evaluate_js(f"window.pyrunner && window.pyrunner.receive({payload})")
 
     supervisor.on_event = emit
+    from pyrunner_host.bridge import AgentBridge
+
+    bridge = AgentBridge(root, supervisor, emit)
+    bridge.start()
     api = HostApi(
         library=library,
         supervisor=supervisor,
         open_file=lambda: _pick_file(holder["window"]),
         platform_name=desktop_platform(),
+        bridge=bridge,
     )
     index = ui_dir() / "index.html"
     if not index.is_file():
@@ -75,6 +80,7 @@ def _run_window() -> int:
         # enable debug, which is the switch that opens an inspector.
         webview.start(private_mode=True, debug=False, http_server=False)
     finally:
+        bridge.stop()
         supervisor.shutdown()
     return 0
 

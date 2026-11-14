@@ -120,12 +120,25 @@
     state.suppress = false;
     state.dirty = false;
     showDirty();
+    syncEditorSoon();
   }
 
   function markDirty() {
     if (state.suppress) return;
     state.dirty = true;
     showDirty();
+    syncEditorSoon();
+  }
+
+  function syncEditorSoon() {
+    if (!editor || (state.caps && state.caps.platform === "android")) return;
+    clearTimeout(state.syncTimer);
+    state.syncTimer = setTimeout(() => {
+      invoke("agentSync", {
+        name: state.name || "untitled.py",
+        source: editor.getValue(),
+      }).catch(() => {});
+    }, 300);
   }
 
   function noteLog(id) {
@@ -226,8 +239,37 @@
       else if (msg.event === "status") onStatus(msg.run);
       else if (msg.event === "probe") onProbe(msg);
       else if (msg.event === "notice") banner(msg.text || "", "info");
+      else if (msg.event === "proposal") showProposal(msg.proposal);
     },
   };
+
+  function showProposal(proposal) {
+    if (!proposal || !proposal.id) return;
+    state.proposal = proposal;
+    const box = $("proposal");
+    box.hidden = false;
+    $("proposal-text").textContent = "A local agent wants to put " + proposal.name + " in the editor. Nothing runs until you approve it.";
+  }
+
+  function settleProposal(approved) {
+    const proposal = state.proposal;
+    const box = $("proposal");
+    if (!proposal) {
+      box.hidden = true;
+      return;
+    }
+    if (approved) {
+      setName(proposal.name || "untitled.py");
+      setEditorValue(proposal.source || "");
+      state.dirty = true;
+      showDirty();
+      show("editor");
+    }
+    box.hidden = true;
+    state.proposal = null;
+    invoke("agentResolve", { id: proposal.id, approved: approved }).catch(showError);
+    syncEditorSoon();
+  }
 
   function renderLogs() {
     const log = state.activeRunId ? state.logs[state.activeRunId] : null;
@@ -419,10 +461,13 @@
       const name = document.createElement("span");
       name.className = "name";
       name.textContent = script.name;
+      const actions = document.createElement("div");
+      actions.className = "actions";
       const open = button("Open", () => loadScript(script.id).catch(showError));
       const run = button("Run", () => runSaved(script.id).catch(showError));
       const rename = button("Rename", () => beginRename(row, script));
       const remove = button("Delete", () => removeScript(row, script, remove).catch(showError));
+      actions.append(open, run, rename, remove);
       const pkgs = document.createElement("div");
       pkgs.className = "lib-pkgs";
       const needed = window.PyRunnerGuide ? window.PyRunnerGuide.scriptPackages(script.source || "") : [];
@@ -448,7 +493,7 @@
           pkgs.append(chip);
         }
       });
-      row.append(name, open, run, rename, remove, pkgs);
+      row.append(name, actions, pkgs);
       list.append(row);
     });
   }
@@ -589,10 +634,13 @@
     const selected = remote.selected || "builtin";
     state.agentModel = selected;
     root.textContent = "";
+    const android = state.caps && state.caps.platform === "android";
     root.append(heading("How to ask"));
-    root.append(note("Type a question below. The built-in helper answers on this device. On Windows, download a model first if you want that model to answer. Switch models in the list. Delete removes a download from this PC."));
+    root.append(note(android
+      ? "Ask below, or press Insert scraper, then Run. This phone uses the built-in helper."
+      : "Ask below. The built-in helper answers on this PC. You can also download a local model."));
     root.append(heading("How to scrape"));
-    root.append(note("Insert scraper, change the URL, then press Run. Output shows printed links and saved images while the script runs. requests and beautifulsoup4 are already included. Missing packages are listed in Library."));
+    root.append(note("Insert scraper, change the URL, then press Run. Printed links and saved images show in Output."));
     const insert = button("Insert scraper", () => {
       if (!editor || !guide) return;
       setEditorValue(guide.SCRAPE);
@@ -603,21 +651,24 @@
     });
     root.append(insert);
 
-    root.append(heading("Models"));
-    const android = state.caps && state.caps.platform === "android";
     if (android) {
-      root.append(note("This phone uses the built-in helper. Qwen2.5-Coder downloads in the Windows app, through Ollama on 127.0.0.1."));
-    } else if (!remote.ollama) {
-      root.append(note("Ollama is not running at 127.0.0.1:11434. Install it on this PC, start it, then come back to download a model. The built-in helper still works."));
+      root.append(note("Larger models stay on the Windows app."));
+    } else {
+      root.append(heading("Models"));
+      root.append(note("A coding agent on this PC can read the open script and propose a new one. The port and token are in agent-bridge.json in the PyRunner data folder. Nothing runs until you press Approve."));
+      if (!remote.ollama) {
+        root.append(note("Ollama is not running at 127.0.0.1:11434. Start it to download a model. The built-in helper still works."));
+      }
     }
-    (guide ? guide.MODELS : []).forEach((model) => {
+    (guide ? guide.MODELS : []).filter((model) => !android || model.id === "builtin").forEach((model) => {
+      if (android) return;
       const card = document.createElement("article");
       card.className = "run-card" + (model.id === selected ? " selected" : "");
       const top = document.createElement("div");
       top.className = "top";
       const name = document.createElement("span");
       name.className = "name";
-      name.textContent = model.label + " · " + model.size;
+      name.textContent = model.id === "builtin" ? model.label : model.label + " · " + model.size;
       top.append(name);
       card.append(top, note(model.detail));
       const actions = document.createElement("div");
@@ -925,6 +976,8 @@
     if (state.activeRunId) act("kill", state.activeRunId);
   });
   $("lib-filter").addEventListener("input", renderLibrary);
+  $("proposal-approve").addEventListener("click", () => settleProposal(true));
+  $("proposal-reject").addEventListener("click", () => settleProposal(false));
   document.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
     if (!(event.ctrlKey || event.metaKey)) return;

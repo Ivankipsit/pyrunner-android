@@ -1,6 +1,6 @@
 [project]
 name = "pyrunner-host"
-version = "0.1.5"
+version = "0.1.6"
 description = "Desktop host for PyRunner. Local only: no telemetry and no server on a public address."
 requires-python = ">=3.12"
 dependencies = [

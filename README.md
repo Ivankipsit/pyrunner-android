@@ -1,14 +1,14 @@
 # PyRunner
 
-**[Download the Android app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.5/pyrunner-android-0.1.5.apk)** (sideload APK) · **[Download the Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.5/PyRunner.exe)** · [Releases](https://github.com/Ivankipsit/pyrunner-android/releases)
+**[Download the Android app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.6/pyrunner-android-0.1.6.apk)** (sideload APK) · **[Download the Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.6/PyRunner.exe)** · [Releases](https://github.com/Ivankipsit/pyrunner-android/releases)
 
-Current version is **0.1.5**. What shipped, and what **0.2.0** will add, is in [CHANGELOG.md](CHANGELOG.md).
+Current version is **0.1.6**. What shipped, and what **0.2.0** will add, is in [CHANGELOG.md](CHANGELOG.md).
 
-PyRunner runs Python you type or open: scrapers and small scripts, several at once, with a live log. There is an Android app and a Windows app. They share one UI (`ui/`). The phone build is sideloaded. On the phone, allow installs from your file manager, or `adb install -r pyrunner-android-0.1.5.apk`. On Windows, download `PyRunner.exe` and open it. WebView2, which current Windows already has, draws the window.
+PyRunner runs Python you type or open: scrapers and small scripts, several at once, with a live log. There is an Android app and a Windows app. They share one UI (`ui/`). The phone build is sideloaded. On the phone, allow installs from your file manager, or `adb install -r pyrunner-android-0.1.6.apk`. On Windows, download `PyRunner.exe` and open it. WebView2, which current Windows already has, draws the window.
 
 Nothing in the app phones home. There is no analytics SDK and no crash reporter. The UI is bundled; it does not load a CDN. The Android UI WebView refuses any non-bundled URL. A script you run can still use the network. That is the script, not the app.
 
-The Windows window is pywebview. To show a local page it starts Bottle on **127.0.0.1** and a random port (Bottle's default bind address; it is not `0.0.0.0`). That server only exists so the window can load the bundled UI and the JS bridge. Debug mode is off.
+The Windows window is pywebview. To show a local page it starts Bottle on **127.0.0.1** and a random port (Bottle's default bind address; it is not `0.0.0.0`). That server only exists so the window can load the bundled UI and the JS bridge. Debug mode is off. A second listener, also on **127.0.0.1**, lets a coding agent on that PC read the open script and propose a new one. The port and token are in `agent-bridge.json` in the PyRunner data folder. A proposed script does not run until you press Approve.
 
 The coding agent is a placeholder screen. A later version is planned to run llama.cpp on the phone (a small model such as Qwen2.5-Coder 3B, for a phone with 12 GB of RAM) and a larger local model on Windows (llama.cpp, or Ollama bound to 127.0.0.1). This milestone does not download or run a model.
 

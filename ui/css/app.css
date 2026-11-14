@@ -300,7 +300,37 @@ pre {
 
 .prose h2, #device h2 { font-size: 1.2rem; margin: 8px 0; }
 
-.note { color: var(--muted); font-size: 14px; line-height: 1.45; }
+.note {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+#proposal {
+  margin: 10px 12px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--lime);
+  border-radius: 10px;
+  background: #1c2410;
+}
+#proposal .actions { display: flex; gap: 8px; margin-top: 8px; }
+
+.lib-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+.lib-row .name {
+  flex: none;
+  width: 100%;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: unset;
+}
+.lib-row .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.lib-pkgs { width: 100%; }
 
 .pip-form { display: flex; gap: 8px; margin: 8px 0 16px; }
 .pip-form input { flex: 1; }
