@@ -23,6 +23,8 @@
     scripts: [],
     runs: [],
     logs: {},
+    links: {},
+    images: {},
     activeRunId: null,
     editorId: null,
     originDir: null,
@@ -196,6 +198,7 @@
     updateNav();
     renderRuns();
     renderLogs();
+    refreshArtifacts(run.id).catch(() => {});
     const log = state.logs[run.id];
     if ((run.status === "running" || run.status === "queued" || run.status === "stopping") && (!log || !log.ready)) {
       ensureLog(run.id);
@@ -242,6 +245,64 @@
     const controllable = run && (run.status === "running" || run.status === "stopping");
     $("btn-stop").disabled = !controllable;
     $("btn-kill").disabled = !run || (run.status !== "running" && run.status !== "stopping" && run.status !== "queued");
+    if (state.activeRunId && window.PyRunnerLive) {
+      state.links[state.activeRunId] = window.PyRunnerLive.extractLinks(text);
+    }
+    renderLive();
+  }
+
+  function renderLive() {
+    const panel = $("live-panel");
+    const linksEl = $("live-links");
+    const imagesEl = $("live-images");
+    const runId = state.activeRunId;
+    const links = (runId && state.links[runId]) || [];
+    const images = [];
+    const stored = runId && state.images[runId];
+    if (stored) {
+      Object.keys(stored).forEach((name) => {
+        if (stored[name] && stored[name].base64) images.push(stored[name]);
+      });
+    }
+    linksEl.textContent = "";
+    links.forEach((url) => {
+      const chip = document.createElement("span");
+      chip.className = "live-link";
+      chip.textContent = url;
+      linksEl.append(chip);
+    });
+    const shown = imagesEl.dataset.names || "";
+    const next = images.map((item) => item.name).join("\n");
+    if (shown !== next) {
+      imagesEl.textContent = "";
+      images.forEach((item) => {
+        const img = document.createElement("img");
+        img.className = "live-image";
+        img.alt = item.name;
+        img.src = "data:" + item.mime + ";base64," + item.base64;
+        imagesEl.append(img);
+      });
+      imagesEl.dataset.names = next;
+    }
+    panel.hidden = links.length === 0 && images.length === 0;
+  }
+
+  async function refreshArtifacts(runId) {
+    if (!runId) return;
+    const listed = await invoke("listArtifacts", { runId: runId });
+    if (!state.images[runId]) state.images[runId] = {};
+    const known = state.images[runId];
+    for (const item of listed) {
+      if (known[item.name] && known[item.name].base64) continue;
+      if (known[item.name] && known[item.name].pending) continue;
+      known[item.name] = { name: item.name, pending: true };
+      try {
+        known[item.name] = await invoke("readArtifact", { runId: runId, name: item.name });
+      } catch (err) {
+        delete known[item.name];
+      }
+      renderLive();
+    }
   }
 
   function pill(status) {
@@ -274,6 +335,7 @@
         ensureLog(run.id);
         renderRuns();
         renderLogs();
+        refreshArtifacts(run.id).catch(() => {});
       });
       const stop = document.createElement("button");
       stop.type = "button";
@@ -650,6 +712,14 @@
       runEditor().catch(showError);
     }
   });
+
+  setInterval(() => {
+    const run = state.runs.find((item) => item.id === state.activeRunId);
+    if (!run) return;
+    if (run.status === "running" || run.status === "queued" || run.status === "stopping") {
+      refreshArtifacts(run.id).catch(() => {});
+    }
+  }, 400);
 
   boot();
 })();

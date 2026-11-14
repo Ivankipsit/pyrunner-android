@@ -25,5 +25,6 @@ for img in soup.find_all("img"):
     if source.is_file():
         shutil.copyfile(source, out / source.name)
         saved += 1
-print(f"links {len(links)}", flush=True)
+for item in links:
+    print(item, flush=True)
 print(f"images {saved}", flush=True)

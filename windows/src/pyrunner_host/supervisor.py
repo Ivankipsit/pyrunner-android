@@ -44,6 +44,7 @@ class ManagedRun:
     exit_code: int | None = None
     error: str | None = None
     origin_dir: str | None = None
+    image_baseline: dict = field(default_factory=dict)
     seq: int = 0
     process: subprocess.Popen | None = None
     readers: list[threading.Thread] = field(default_factory=list)
@@ -109,6 +110,9 @@ class Supervisor:
         (run_dir / "log.txt").write_text("", encoding="utf-8")
         if os.name == "nt":
             (work / "sitecustomize.py").write_text(WINDOWS_SITE, encoding="utf-8")
+        from pyrunner_host.artifacts import snapshot
+
+        opened = origin_dir if _is_dir(origin_dir) else None
         run = ManagedRun(
             id=run_id,
             name=safe,
@@ -118,7 +122,8 @@ class Supervisor:
             work_dir=work,
             script_path=script_path,
             log_path=run_dir / "log.txt",
-            origin_dir=origin_dir if _is_dir(origin_dir) else None,
+            origin_dir=opened,
+            image_baseline=snapshot(work, opened),
         )
         with self._lock:
             if self._closed:
@@ -163,6 +168,25 @@ class Supervisor:
             runs = [run.public() for run in self._runs.values()]
         runs.sort(key=lambda item: item["createdAt"], reverse=True)
         return runs
+
+    def list_artifacts(self, run_id: str) -> list[dict]:
+        from pyrunner_host.artifacts import list_new
+
+        with self._lock:
+            run = self._get(run_id)
+            work = run.work_dir
+            origin = run.origin_dir
+            baseline = dict(run.image_baseline)
+        return list_new(work, origin, baseline)
+
+    def read_artifact(self, run_id: str, name: str) -> dict:
+        from pyrunner_host.artifacts import read
+
+        with self._lock:
+            run = self._get(run_id)
+            work = run.work_dir
+            origin = run.origin_dir
+        return read(work, origin, name)
 
     def read_log(self, run_id: str, max_chars: int = 200_000) -> dict:
         with self._lock:

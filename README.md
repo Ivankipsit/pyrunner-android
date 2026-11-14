@@ -1,10 +1,10 @@
 # PyRunner
 
-**[Download the Android app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.3/pyrunner-android-0.1.3.apk)** (sideload APK) · **[Download the Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.3/PyRunner.exe)** · [Releases](https://github.com/Ivankipsit/pyrunner-android/releases)
+**[Download the Android app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.4/pyrunner-android-0.1.4.apk)** (sideload APK) · **[Download the Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.4/PyRunner.exe)** · [Releases](https://github.com/Ivankipsit/pyrunner-android/releases)
 
-Current version is **0.1.3**. What shipped, and what **0.2.0** will add, is in [CHANGELOG.md](CHANGELOG.md).
+Current version is **0.1.4**. What shipped, and what **0.2.0** will add, is in [CHANGELOG.md](CHANGELOG.md).
 
-PyRunner runs Python you type or open: scrapers and small scripts, several at once, with a live log. There is an Android app and a Windows app. They share one UI (`ui/`). The phone build is sideloaded. On the phone, allow installs from your file manager, or `adb install -r pyrunner-android-0.1.3.apk`. On Windows, download `PyRunner.exe` and open it. WebView2, which current Windows already has, draws the window.
+PyRunner runs Python you type or open: scrapers and small scripts, several at once, with a live log. There is an Android app and a Windows app. They share one UI (`ui/`). The phone build is sideloaded. On the phone, allow installs from your file manager, or `adb install -r pyrunner-android-0.1.4.apk`. On Windows, download `PyRunner.exe` and open it. WebView2, which current Windows already has, draws the window.
 
 Nothing in the app phones home. There is no analytics SDK and no crash reporter. The UI is bundled; it does not load a CDN. The Android UI WebView refuses any non-bundled URL. A script you run can still use the network. That is the script, not the app.
 
