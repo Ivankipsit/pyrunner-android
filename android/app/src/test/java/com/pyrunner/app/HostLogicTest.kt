@@ -1,6 +1,7 @@
 package com.pyrunner.app
 
 import com.pyrunner.app.library.ScriptStore
+import com.pyrunner.app.runs.LiveFiles
 import com.pyrunner.app.runs.RunStore
 import java.io.File
 import org.junit.Assert.assertEquals
@@ -40,7 +41,7 @@ class HostLogicTest {
             .findAll(html)
             .map { it.groupValues[1] }
             .toList()
-        assertEquals(listOf("css/app.css", "vendor/codemirror-bundle.js", "js/app.js"), refs)
+        assertEquals(listOf("css/app.css", "vendor/codemirror-bundle.js", "js/live.js", "js/app.js"), refs)
         for (ref in refs) {
             assertFalse(ref.contains("://"))
             val file = File(ui, ref)
@@ -100,5 +101,20 @@ class HostLogicTest {
         val tail = store.readLog(run.id, 4)
         assertTrue(tail.truncated)
         assertEquals("llo\n", tail.text)
+    }
+
+    @Test
+    fun savedImagesShowUpAndCannotLeaveTheRunFolder() {
+        val root = File.createTempFile("live", "").apply { delete(); mkdirs() }
+        val before = LiveFiles.snapshot(root)
+        val image = File(root, "images/pic.png")
+        image.parentFile?.mkdirs()
+        image.writeBytes(byteArrayOf(1, 2, 3, 4))
+        assertEquals(listOf("images/pic.png"), LiveFiles.listNew(root, before).map { it.name })
+        assertEquals(4, LiveFiles.read(root, "images/pic.png").size)
+        assertTrue(LiveFiles.listNew(root, LiveFiles.snapshot(root)).isEmpty())
+        assertThrows(IllegalArgumentException::class.java) { LiveFiles.read(root, "../pic.png") }
+        assertThrows(IllegalArgumentException::class.java) { LiveFiles.read(root, "images/../../pic.png") }
+        assertThrows(IllegalArgumentException::class.java) { LiveFiles.read(root, "notes.txt") }
     }
 }

@@ -28,6 +28,7 @@ import kotlinx.serialization.json.put
 
 class RunEngine(private val service: RunService) {
     private val store = RunStore(File(service.filesDir, "runs"))
+    private val imageBaseline = java.util.concurrent.ConcurrentHashMap<String, Map<String, String>>()
     private val gate = Any()
     private val main = Handler(Looper.getMainLooper())
     private val threadCancels = HashMap<String, CancelFlag>()
@@ -72,7 +73,9 @@ class RunEngine(private val service: RunService) {
         val safe = NameRules.normalize(name)
         val created = mutate {
             val record = store.create(safe, scriptId)
-            File(store.workDir(record.id), "main.py").writeText(source)
+            val work = store.workDir(record.id)
+            File(work, "main.py").writeText(source)
+            imageBaseline[record.id] = LiveFiles.snapshot(work)
             record
         }
         return store.get(created.id) ?: created
@@ -147,6 +150,18 @@ class RunEngine(private val service: RunService) {
     fun listRuns(): List<RunRecord> = store.list()
 
     fun readLog(id: String, maxChars: Int): LogSlice = store.readLog(id, maxChars)
+
+    fun listArtifacts(id: String): List<LiveFiles.ImageFile> {
+        store.get(id) ?: throw IllegalArgumentException("Unknown run")
+        val work = store.workDir(id)
+        val baseline = imageBaseline[id] ?: emptyMap()
+        return LiveFiles.listNew(work, baseline)
+    }
+
+    fun readArtifact(id: String, name: String): ByteArray {
+        store.get(id) ?: throw IllegalArgumentException("Unknown run")
+        return LiveFiles.read(store.workDir(id), name)
+    }
 
     fun activeCount(): Int = store.list().count {
         it.status == "running" || it.status == "stopping" || it.status == "queued"

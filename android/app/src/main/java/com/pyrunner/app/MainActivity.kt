@@ -19,6 +19,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.util.Base64
 import android.webkit.WebViewClient
 import java.io.IOException
 import android.view.ViewGroup
@@ -179,6 +180,28 @@ class MainActivity : ComponentActivity() {
                 put("text", slice.text)
                 put("nextSeq", slice.nextSeq)
                 put("truncated", slice.truncated)
+            }
+        }
+        "listArtifacts" -> {
+            val id = Jsons.text(params, "runId") ?: throw IllegalArgumentException("runId is required")
+            buildJsonArray {
+                for (item in engine().listArtifacts(id)) {
+                    add(buildJsonObject {
+                        put("name", item.name)
+                        put("kind", "image")
+                        put("bytes", item.bytes)
+                    })
+                }
+            }
+        }
+        "readArtifact" -> {
+            val id = Jsons.text(params, "runId") ?: throw IllegalArgumentException("runId is required")
+            val name = Jsons.text(params, "name") ?: throw IllegalArgumentException("name is required")
+            val bytes = engine().readArtifact(id, name)
+            buildJsonObject {
+                put("name", name)
+                put("mime", com.pyrunner.app.runs.LiveFiles.mime(name))
+                put("base64", Base64.encodeToString(bytes, Base64.NO_WRAP))
             }
         }
         "concurrencyProbe" -> {

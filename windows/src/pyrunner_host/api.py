@@ -21,6 +21,8 @@ METHODS = (
     "kill",
     "listRuns",
     "readLog",
+    "listArtifacts",
+    "readArtifact",
     "listScripts",
     "getScript",
     "saveScript",
@@ -82,6 +84,10 @@ class HostApi:
         if method == "readLog":
             max_chars = params.get("maxChars") or 200_000
             return self.supervisor.read_log(_required_str(params, "runId"), int(max_chars))
+        if method == "listArtifacts":
+            return self.supervisor.list_artifacts(_required_str(params, "runId"))
+        if method == "readArtifact":
+            return self.supervisor.read_artifact(_required_str(params, "runId"), _required_str(params, "name"))
         if method == "listScripts":
             return self.library.list_scripts()
         if method == "getScript":

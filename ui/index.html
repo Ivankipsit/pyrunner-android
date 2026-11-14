@@ -42,6 +42,10 @@
           <button type="button" id="btn-stop" disabled>Stop</button>
           <button type="button" id="btn-kill" disabled>Kill</button>
         </div>
+        <div id="live-panel" hidden>
+          <div id="live-links"></div>
+          <div id="live-images"></div>
+        </div>
         <pre id="editor-log"></pre>
       </section>
       <section id="view-runs" hidden>
@@ -84,6 +88,7 @@
     </div>
   </div>
   <script src="vendor/codemirror-bundle.js"></script>
+  <script src="js/live.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
