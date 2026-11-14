@@ -1,0 +1,3 @@
+-keep class com.chaquo.python.** { *; }
+-keep class com.pyrunner.app.runs.TextSink { void write(java.lang.String); }
+-keep class com.pyrunner.app.runs.CancelFlag { *; }
