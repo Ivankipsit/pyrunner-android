@@ -41,7 +41,10 @@ class HostLogicTest {
             .findAll(html)
             .map { it.groupValues[1] }
             .toList()
-        assertEquals(listOf("css/app.css", "vendor/codemirror-bundle.js", "js/live.js", "js/app.js"), refs)
+        assertEquals(
+            listOf("css/app.css", "vendor/codemirror-bundle.js", "js/live.js", "js/guide.js", "js/app.js"),
+            refs,
+        )
         for (ref in refs) {
             assertFalse(ref.contains("://"))
             val file = File(ui, ref)

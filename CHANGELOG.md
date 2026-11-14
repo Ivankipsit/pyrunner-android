@@ -2,6 +2,18 @@
 
 Versions match the app version in the Android `versionName` and the Windows package. Downloads for a version are on the [releases page](https://github.com/Ivankipsit/pyrunner-android/releases).
 
+## 0.1.5
+
+- The script name has its own row. New, Open, Save, and Run are on the next row.
+- Runs lists each script as a card with its time, Stop, Kill, and Output. The log for the selected run fills the rest of the screen.
+- Library shows the packages a script imports. On Windows, Install adds a missing package from PyPI. The phone shows whether that package is already in the app.
+- Agent is the built-in helper. Ask how to scrape, or press Insert scraper, then Run. On Windows you can switch to Qwen2.5-Coder 3B, 7B, or 14B, download it through Ollama at 127.0.0.1, or delete it. The phone keeps the built-in helper.
+
+Installers:
+
+- [Android APK](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.5/pyrunner-android-0.1.5.apk)
+- [Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.5/PyRunner.exe)
+
 ## 0.1.4
 
 - The Output view shows what a script is doing while it is still running. Links from the log appear as they are printed. Images the script saves appear above the log, on Android and Windows.

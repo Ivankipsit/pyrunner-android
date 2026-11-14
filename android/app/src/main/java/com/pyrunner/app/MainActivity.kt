@@ -214,6 +214,23 @@ class MainActivity : ComponentActivity() {
             getSharedPreferences("pyrunner", MODE_PRIVATE).edit().putString("runner_mode", mode).apply()
             buildJsonObject { put("mode", mode) }
         }
+        "agentStatus" -> buildJsonObject {
+            put("ollama", false)
+            put("selected", "builtin")
+            put("installed", buildJsonArray { })
+            put("pulling", "")
+        }
+        "agentSelect" -> {
+            val id = Jsons.text(params, "id") ?: "builtin"
+            if (id != "builtin") {
+                throw IllegalArgumentException("This phone uses the built-in helper. Download a model on Windows.")
+            }
+            buildJsonObject { put("selected", "builtin") }
+        }
+        "agentPull", "agentDelete" -> throw IllegalArgumentException(
+            "This phone uses the built-in helper. Download or delete a model on Windows. That stays on 127.0.0.1.",
+        )
+        "agentAsk" -> throw IllegalArgumentException("Ask the built-in helper on this phone. It does not call a model.")
         "requestBatteryExemption" -> {
             val intent = Intent(
                 Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,

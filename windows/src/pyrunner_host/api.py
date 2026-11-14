@@ -33,6 +33,11 @@ METHODS = (
     "concurrencyProbe",
     "setRunnerMode",
     "requestBatteryExemption",
+    "agentStatus",
+    "agentSelect",
+    "agentPull",
+    "agentDelete",
+    "agentAsk",
 )
 
 
@@ -52,6 +57,7 @@ class HostApi:
         self.distribution = distribution
         self._probe_lock = threading.Lock()
         self._probe_running = False
+        self._agent = None
 
     def invoke(self, request_json: str) -> str:
         try:
@@ -112,6 +118,20 @@ class HostApi:
             raise RuntimeError("Runner mode is fixed on this platform")
         if method == "requestBatteryExemption":
             raise RuntimeError("Battery exemption is an Android setting")
+        if method == "agentStatus":
+            return self.agent().status()
+        if method == "agentSelect":
+            return self.agent().select(str(params.get("id") or "builtin"))
+        if method == "agentPull":
+            return self.agent().pull(str(params.get("id") or ""))
+        if method == "agentDelete":
+            return self.agent().delete(str(params.get("id") or ""))
+        if method == "agentAsk":
+            return self.agent().ask(
+                str(params.get("id") or ""),
+                str(params.get("prompt") or ""),
+                str(params.get("script") or ""),
+            )
         raise ValueError(f"Unknown method: {method}")
 
     def capabilities(self) -> dict:
@@ -142,11 +162,11 @@ class HostApi:
                 "scriptLibrary": True,
                 "filePicker": True,
                 "foregroundService": False,
-                "pipRuntime": True,
+                "pipRuntime": not getattr(sys, "frozen", False),
                 "multiprocessing": True,
                 "playwright": playwright,
                 "selenium": selenium,
-                "localAgent": False,
+                "localAgent": True,
                 "webviewRender": False,
             },
             "packages": curated_packages(),
@@ -179,6 +199,13 @@ class HostApi:
 
         threading.Thread(target=work, name="pyrunner-probe", daemon=True).start()
         return {"started": True}
+
+    def agent(self):
+        if self._agent is None:
+            from pyrunner_host.agent import AgentClient
+
+            self._agent = AgentClient(self.supervisor.root)
+        return self._agent
 
 
 def desktop_platform() -> str:

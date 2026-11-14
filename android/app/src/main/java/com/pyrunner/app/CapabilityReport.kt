@@ -16,7 +16,7 @@ object CapabilityReport {
         val prefs = context.getSharedPreferences("pyrunner", Context.MODE_PRIVATE)
         val thread = prefs.getString("runner_mode", "process") == "thread"
         return buildJsonObject {
-            put("appVersion", "0.1.4")
+            put("appVersion", "0.1.5")
             put("platform", "android")
             put("python", "3.13")
             put("distribution", "sideload")
@@ -34,14 +34,15 @@ object CapabilityReport {
                 put("multiprocessing", false)
                 put("playwright", false)
                 put("selenium", false)
-                put("localAgent", false)
+                put("localAgent", true)
                 put("webviewRender", false)
             })
             put("packages", packages(context))
             put("limits", buildJsonObject { put("runTimeoutSec", TIMEOUT_SEC) })
             put("notes", buildJsonArray {
                 add("Playwright and Selenium are not part of the Android build.")
-                add("Packages with native code are fixed when the APK is built.")
+                add("Packages with native code are fixed when the APK is built. The library shows which ones a script needs.")
+                add("The built-in helper answers on this phone. Larger models download in the Windows app.")
                 add("Force-kill uses separate app processes. If those processes do not start, PyRunner switches to one shared interpreter.")
                 if (thread) {
                     add("This device is using the shared interpreter. A stuck native call cannot be force-killed.")
