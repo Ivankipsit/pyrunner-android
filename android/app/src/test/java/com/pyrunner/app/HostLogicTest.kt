@@ -21,12 +21,36 @@ class HostLogicTest {
 
     @Test
     fun webViewOnlyLoadsBundledPages() {
-        assertTrue(WebPolicy.isAllowedAsset("file:///android_asset/web/index.html"))
-        assertTrue(WebPolicy.isAllowedAsset("file:///android_asset/web/js/app.js"))
-        assertFalse(WebPolicy.isAllowedAsset("https://example.com/"))
-        assertFalse(WebPolicy.isAllowedAsset("file:///android_asset/web/../secret"))
-        assertFalse(WebPolicy.isAllowedAsset("file:///android_asset/web/%2e%2e/secret"))
-        assertFalse(WebPolicy.isAllowedAsset(null))
+        assertTrue(WebPolicy.isAllowedAppAsset(WebPolicy.UI_BASE + "index.html"))
+        assertTrue(WebPolicy.isAllowedAppAsset(WebPolicy.UI_BASE + "js/app.js"))
+        assertFalse(WebPolicy.isAllowedAppAsset("https://example.com/"))
+        assertFalse(WebPolicy.isAllowedAppAsset("http://appassets.androidplatform.net/assets/web/index.html"))
+        assertFalse(WebPolicy.isAllowedAppAsset("file:///android_asset/web/index.html"))
+        assertFalse(WebPolicy.isAllowedAppAsset(WebPolicy.UI_BASE + "../secret"))
+        assertFalse(WebPolicy.isAllowedAppAsset(WebPolicy.UI_BASE + "%2e%2e/secret"))
+        assertFalse(WebPolicy.isAllowedAppAsset(null))
+    }
+
+    @Test
+    fun bundledUiBootsFromAppAssets() {
+        val ui = listOf(File("../../ui"), File("../ui"), File("ui"))
+            .first { File(it, "index.html").isFile }
+        val html = File(ui, "index.html").readText()
+        val refs = Regex("""(?:src|href)\s*=\s*"([^"]+)"""")
+            .findAll(html)
+            .map { it.groupValues[1] }
+            .toList()
+        assertEquals(listOf("css/app.css", "vendor/codemirror-bundle.js", "js/app.js"), refs)
+        for (ref in refs) {
+            assertFalse(ref.contains("://"))
+            val file = File(ui, ref)
+            assertTrue("$ref is missing", file.isFile && file.length() > 0)
+            assertTrue(WebPolicy.isAllowedAppAsset(WebPolicy.UI_BASE + ref))
+        }
+        val script = File(ui, "js/app.js").readText()
+        assertTrue(script.contains("async function boot("))
+        assertTrue(script.contains("boot();"))
+        assertTrue(script.contains("PyRunnerAndroid"))
     }
 
     @Test

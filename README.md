@@ -1,10 +1,10 @@
 # PyRunner
 
-**[Download the Android app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.0/pyrunner-android-0.1.0.apk)** (sideload APK) · **[Download the Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.0/PyRunner-windows-0.1.0.zip)** (portable zip) · [Release 0.1.0](https://github.com/Ivankipsit/pyrunner-android/releases/tag/v0.1.0)
+**[Download the Android app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.1/pyrunner-android-0.1.1.apk)** (sideload APK, 0.1.1) · **[Download the Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.0/PyRunner-windows-0.1.0.zip)** (portable zip, 0.1.0) · [Releases](https://github.com/Ivankipsit/pyrunner-android/releases)
 
-Current version is **0.1.0**. What shipped, and what **0.2.0** will add, is in [CHANGELOG.md](CHANGELOG.md).
+Android is **0.1.1**. The Windows zip is still **0.1.0** because that build did not change. What shipped, and what **0.2.0** will add, is in [CHANGELOG.md](CHANGELOG.md).
 
-PyRunner runs Python you type or open: scrapers and small scripts, several at once, with a live log. There is an Android app and a Windows app. They share one UI (`ui/`). The phone build is sideloaded. The Windows build is a portable folder. Unzip the Windows download and run `PyRunner.cmd`. On the phone, allow installs from your file manager, or `adb install -r pyrunner-android-0.1.0.apk`.
+PyRunner runs Python you type or open: scrapers and small scripts, several at once, with a live log. There is an Android app and a Windows app. They share one UI (`ui/`). The phone build is sideloaded. The Windows build is a portable folder. Unzip the Windows download and run `PyRunner.cmd`. On the phone, allow installs from your file manager, or `adb install -r pyrunner-android-0.1.1.apk`.
 
 Nothing in the app phones home. There is no analytics SDK and no crash reporter. The UI is bundled; it does not load a CDN. The Android UI WebView refuses any non-bundled URL. A script you run can still use the network. That is the script, not the app.
 

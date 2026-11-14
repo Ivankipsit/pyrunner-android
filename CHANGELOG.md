@@ -1,6 +1,16 @@
 # Changelog
 
-Versions match the app version (`0.1.0` in the Android `versionName` and the Windows package). Downloads for a version are on the [releases page](https://github.com/Ivankipsit/pyrunner-android/releases).
+Versions match the app version in the Android `versionName` and the Windows package. Downloads for a version are on the [releases page](https://github.com/Ivankipsit/pyrunner-android/releases).
+
+## 0.1.1
+
+Fixes the Android app opening onto a blank screen.
+
+The UI was loaded as `file://`, and WebView then refused `css/app.css`, the editor bundle, and `js/app.js`. Those files are now read out of the APK by `WebViewAssetLoader` and shown on `https://appassets.androidplatform.net`, which the app intercepts and does not send over the network. Any other URL is refused.
+
+- [Android APK](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.1/pyrunner-android-0.1.1.apk)
+
+The Windows zip did not change. Keep using [0.1.0](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.0/PyRunner-windows-0.1.0.zip).
 
 ## 0.1.0
 

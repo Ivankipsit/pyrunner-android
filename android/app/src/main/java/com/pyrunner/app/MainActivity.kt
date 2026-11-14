@@ -20,6 +20,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.webkit.WebViewAssetLoader
 import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +46,7 @@ import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
     private lateinit var library: ScriptStore
+    private lateinit var assetLoader: WebViewAssetLoader
     private var webView: WebView? = null
     private var runService: RunService? = null
     private val bound = CountDownLatch(1)
@@ -75,12 +77,16 @@ class MainActivity : ComponentActivity() {
         library = ScriptStore(java.io.File(filesDir, "library"))
         seedExamples()
         requestNotifications()
+        assetLoader = WebViewAssetLoader.Builder()
+            .setDomain(WebPolicy.APP_ASSET_HOST)
+            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .build()
         val view = WebView(this)
         webView = view
         configure(view)
         setContentView(view)
         bindService(Intent(this, RunService::class.java), connection, BIND_AUTO_CREATE)
-        view.loadUrl("file:///android_asset/web/index.html")
+        view.loadUrl(WebPolicy.UI_BASE + "index.html")
     }
 
     override fun onDestroy() {
@@ -280,7 +286,7 @@ class MainActivity : ComponentActivity() {
         val settings = view.settings
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = false
-        settings.allowFileAccess = true
+        settings.allowFileAccess = false
         settings.allowContentAccess = false
         settings.setGeolocationEnabled(false)
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
@@ -291,13 +297,15 @@ class MainActivity : ComponentActivity() {
         view.addJavascriptInterface(JsBridge(this), "PyRunnerAndroid")
         view.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                return !WebPolicy.isAllowedAsset(request.url?.toString())
+                return !WebPolicy.isAllowedAppAsset(request.url?.toString())
             }
 
-            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
-                val url = request.url?.toString().orEmpty()
-                if (WebPolicy.isAllowedAsset(url)) return null
-                return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse {
+                val url = request.url?.toString()
+                if (!WebPolicy.isAllowedAppAsset(url)) return blocked()
+                // WebViewAssetLoader reads the APK assets. Returning null would let
+                // WebView try the network, so a missing file is an empty response.
+                return assetLoader.shouldInterceptRequest(request.url) ?: blocked()
             }
         }
     }
@@ -310,6 +318,10 @@ class JsBridge(private val activity: MainActivity) {
     } catch (error: Exception) {
         Jsons.err(error.message ?: "error")
     }
+}
+
+private fun blocked(): WebResourceResponse {
+    return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
 }
 
 private fun readCapped(input: InputStream, cap: Int): ByteArray {
