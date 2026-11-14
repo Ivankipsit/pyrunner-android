@@ -12,10 +12,23 @@ def app_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def bundle_root() -> Path | None:
+    """PyInstaller extraction directory, when this process is the .exe."""
+    if getattr(sys, "frozen", False):
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            return Path(meipass)
+        return Path(sys.executable).resolve().parent
+    return None
+
+
 def _bundled_or_sibling(name: str, env_var: str) -> Path:
     override = os.environ.get(env_var)
     if override:
         return Path(override)
+    packed = bundle_root()
+    if packed is not None and (packed / name).is_dir():
+        return packed / name
     bundled = app_root() / name
     if bundled.is_dir():
         return bundled

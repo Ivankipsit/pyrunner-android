@@ -51,6 +51,14 @@ class HostLogicTest {
         assertTrue(script.contains("async function boot("))
         assertTrue(script.contains("boot();"))
         assertTrue(script.contains("PyRunnerAndroid"))
+        assertEquals("web/index.html", UiAssets.assetPath(WebPolicy.UI_BASE + "index.html"))
+        assertEquals("web/css/app.css", UiAssets.assetPath(WebPolicy.UI_BASE + "css/app.css"))
+        assertEquals("web/js/app.js", UiAssets.assetPath(WebPolicy.UI_BASE + "js/app.js"))
+        assertEquals("web/vendor/codemirror-bundle.js", UiAssets.assetPath(WebPolicy.UI_BASE + "vendor/codemirror-bundle.js"))
+        assertEquals("text/html", UiAssets.mimeType("web/index.html"))
+        assertEquals("text/css", UiAssets.mimeType("web/css/app.css"))
+        assertEquals("text/javascript", UiAssets.mimeType("web/js/app.js"))
+        assertEquals(null, UiAssets.assetPath("https://example.com/index.html"))
     }
 
     @Test

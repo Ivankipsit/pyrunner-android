@@ -16,7 +16,7 @@ object CapabilityReport {
         val prefs = context.getSharedPreferences("pyrunner", Context.MODE_PRIVATE)
         val thread = prefs.getString("runner_mode", "process") == "thread"
         return buildJsonObject {
-            put("appVersion", "0.1.1")
+            put("appVersion", "0.1.2")
             put("platform", "android")
             put("python", "3.13")
             put("distribution", "sideload")

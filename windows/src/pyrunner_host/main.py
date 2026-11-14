@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import traceback
 from pathlib import Path
@@ -15,6 +16,10 @@ from pyrunner_host.supervisor import Supervisor
 
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
+    if args[:1] == ["--script"] and len(args) >= 2:
+        from pyrunner_host.child import run_script
+
+        return run_script(args[1])
     if args[:1] == ["selftest"]:
         from pyrunner_host.selftest import run
 
@@ -22,7 +27,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return _run_window()
     except Exception:
-        _write_host_log(traceback.format_exc())
+        text = traceback.format_exc()
+        _write_host_log(text)
+        _alert(text)
         raise
 
 
@@ -105,6 +112,17 @@ def _pick_file(window) -> dict | None:
         "content": path.read_text(encoding="utf-8", errors="replace"),
         "originDir": str(path.parent),
     }
+
+
+def _alert(text: str) -> None:
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.user32.MessageBoxW(None, text[-1500:], "PyRunner", 0x10)
+    except Exception:
+        return
 
 
 def _write_host_log(text: str) -> None:

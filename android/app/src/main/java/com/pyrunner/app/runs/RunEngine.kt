@@ -50,7 +50,10 @@ class RunEngine(private val service: RunService) {
     })
 
     init {
-        killLeftoverSlotProcesses()
+        try {
+            killLeftoverSlotProcesses()
+        } catch (_: Exception) {
+        }
         store.failInterrupted()
         Thread({
             while (!closed) {

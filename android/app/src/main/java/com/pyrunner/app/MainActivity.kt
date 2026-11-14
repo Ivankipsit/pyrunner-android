@@ -20,7 +20,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.webkit.WebViewAssetLoader
+import java.io.IOException
 import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -46,7 +46,6 @@ import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
     private lateinit var library: ScriptStore
-    private lateinit var assetLoader: WebViewAssetLoader
     private var webView: WebView? = null
     private var runService: RunService? = null
     private val bound = CountDownLatch(1)
@@ -73,18 +72,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        paintSystemBars()
         library = ScriptStore(java.io.File(filesDir, "library"))
         seedExamples()
         requestNotifications()
-        assetLoader = WebViewAssetLoader.Builder()
-            .setDomain(WebPolicy.APP_ASSET_HOST)
-            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
-            .build()
         val view = WebView(this)
         webView = view
         configure(view)
         setContentView(view)
+        paintSystemBars()
         bindService(Intent(this, RunService::class.java), connection, BIND_AUTO_CREATE)
         view.loadUrl(WebPolicy.UI_BASE + "index.html")
     }
@@ -272,7 +267,8 @@ class MainActivity : ComponentActivity() {
         @Suppress("DEPRECATION")
         window.navigationBarColor = Color.parseColor("#14160F")
         if (Build.VERSION.SDK_INT >= 30) {
-            window.insetsController?.setSystemBarsAppearance(
+            val controller = window.decorView.windowInsetsController ?: return
+            controller.setSystemBarsAppearance(
                 0,
                 WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
                     WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
@@ -293,6 +289,7 @@ class MainActivity : ComponentActivity() {
         settings.useWideViewPort = true
         settings.loadWithOverviewMode = true
         if (Build.VERSION.SDK_INT >= 26) settings.safeBrowsingEnabled = false
+        settings.blockNetworkLoads = true
         CookieManager.getInstance().setAcceptCookie(false)
         view.addJavascriptInterface(JsBridge(this), "PyRunnerAndroid")
         view.webViewClient = object : WebViewClient() {
@@ -300,12 +297,13 @@ class MainActivity : ComponentActivity() {
                 return !WebPolicy.isAllowedAppAsset(request.url?.toString())
             }
 
+            @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+            override fun shouldInterceptRequest(view: WebView, url: String): WebResourceResponse {
+                return serve(url)
+            }
+
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse {
-                val url = request.url?.toString()
-                if (!WebPolicy.isAllowedAppAsset(url)) return blocked()
-                // WebViewAssetLoader reads the APK assets. Returning null would let
-                // WebView try the network, so a missing file is an empty response.
-                return assetLoader.shouldInterceptRequest(request.url) ?: blocked()
+                return serve(request.url?.toString())
             }
         }
     }
@@ -320,8 +318,24 @@ class JsBridge(private val activity: MainActivity) {
     }
 }
 
+private fun MainActivity.serve(url: String?): WebResourceResponse {
+    val path = UiAssets.assetPath(url) ?: return blocked()
+    return try {
+        WebResourceResponse(UiAssets.mimeType(path), UiAssets.charset(path), assets.open(path))
+    } catch (_: IOException) {
+        blocked()
+    }
+}
+
 private fun blocked(): WebResourceResponse {
-    return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
+    return WebResourceResponse(
+        "text/plain",
+        "utf-8",
+        200,
+        "OK",
+        emptyMap<String, String>(),
+        ByteArrayInputStream(ByteArray(0)),
+    )
 }
 
 private fun readCapped(input: InputStream, cap: Int): ByteArray {

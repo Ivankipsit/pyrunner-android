@@ -2,6 +2,16 @@
 
 Versions match the app version in the Android `versionName` and the Windows package. Downloads for a version are on the [releases page](https://github.com/Ivankipsit/pyrunner-android/releases).
 
+## 0.1.2
+
+- Android opens the editor. Launch no longer crashes while coloring the status bar, which happened before the window existed on Android 15. The page, stylesheet, and scripts are read from the APK. WebView is not asked to load them as `file://`, and it is not allowed to fetch them from the network.
+- Windows is a double-click `PyRunner.exe`. It opens the same UI. Scripts run inside that program, with the built-in scraping packages.
+
+Installers:
+
+- [Android APK](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.2/pyrunner-android-0.1.2.apk)
+- [Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.2/PyRunner.exe)
+
 ## 0.1.1
 
 Fixes the Android app opening onto a blank screen.
