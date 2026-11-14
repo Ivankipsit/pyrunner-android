@@ -21,10 +21,16 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import java.io.IOException
+import android.view.ViewGroup
 import android.view.WindowInsetsController
+import android.view.WindowManager
+import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.pyrunner.app.library.ScriptStore
 import com.pyrunner.app.runs.RunEngine
 import com.pyrunner.app.runs.RunRecord
@@ -78,8 +84,17 @@ class MainActivity : ComponentActivity() {
         val view = WebView(this)
         webView = view
         configure(view)
-        setContentView(view)
+        val frame = FrameLayout(this)
+        frame.addView(
+            view,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
+        )
+        setContentView(frame)
         paintSystemBars()
+        applySystemInsets(frame)
         bindService(Intent(this, RunService::class.java), connection, BIND_AUTO_CREATE)
         view.loadUrl(WebPolicy.UI_BASE + "index.html")
     }
@@ -259,6 +274,29 @@ class MainActivity : ComponentActivity() {
             return
         }
         requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+    }
+
+    private fun applySystemInsets(frame: FrameLayout) {
+        if (Build.VERSION.SDK_INT >= 28) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+        if (Build.VERSION.SDK_INT >= 29) {
+            window.isStatusBarContrastEnforced = false
+            window.isNavigationBarContrastEnforced = false
+        }
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        ViewCompat.setOnApplyWindowInsetsListener(frame) { target, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or
+                    WindowInsetsCompat.Type.displayCutout() or
+                    WindowInsetsCompat.Type.ime(),
+            )
+            target.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
+        ViewCompat.requestApplyInsets(frame)
     }
 
     private fun paintSystemBars() {

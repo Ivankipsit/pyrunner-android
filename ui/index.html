@@ -13,6 +13,7 @@
       <div class="brand">Py<span>Runner</span></div>
       <nav id="nav">
         <button type="button" data-view="editor" class="active">Editor</button>
+        <button type="button" data-view="output" id="nav-output">Output</button>
         <button type="button" data-view="runs" id="nav-runs">Runs</button>
         <button type="button" data-view="library">Library</button>
         <button type="button" data-view="device">Device</button>
@@ -31,20 +32,23 @@
           <button type="button" id="btn-save">Save</button>
           <button type="button" id="btn-run" class="primary">Run</button>
         </div>
-        <div id="editor-wrap">
-          <div id="editor"></div>
-          <div id="editor-output">
-            <div class="output-bar">
-              <span id="editor-run-label">Output</span>
-              <div class="spacer"></div>
-              <button type="button" id="btn-stop" disabled>Stop</button>
-              <button type="button" id="btn-kill" disabled>Kill</button>
-            </div>
-            <pre id="editor-log"></pre>
-          </div>
+        <div id="editor"></div>
+      </section>
+      <section id="view-output" hidden>
+        <div class="view-head">
+          <button type="button" data-close>Close</button>
+          <span id="editor-run-label">Output</span>
+          <div class="spacer"></div>
+          <button type="button" id="btn-stop" disabled>Stop</button>
+          <button type="button" id="btn-kill" disabled>Kill</button>
         </div>
+        <pre id="editor-log"></pre>
       </section>
       <section id="view-runs" hidden>
+        <div class="view-head">
+          <button type="button" data-close>Close</button>
+          <span>Runs</span>
+        </div>
         <div class="split">
           <div id="run-list"></div>
           <div class="log-pane">
@@ -54,15 +58,27 @@
         </div>
       </section>
       <section id="view-library" hidden>
+        <div class="view-head">
+          <button type="button" data-close>Close</button>
+          <span>Library</span>
+        </div>
         <div class="toolbar">
           <input id="lib-filter" placeholder="Filter scripts" aria-label="Filter scripts" />
         </div>
         <div id="lib-list"></div>
       </section>
       <section id="view-device" hidden>
+        <div class="view-head">
+          <button type="button" data-close>Close</button>
+          <span>Device</span>
+        </div>
         <div id="device"></div>
       </section>
       <section id="view-agent" hidden>
+        <div class="view-head">
+          <button type="button" data-close>Close</button>
+          <span>Agent</span>
+        </div>
         <div id="agent" class="prose"></div>
       </section>
     </div>

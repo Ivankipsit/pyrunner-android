@@ -84,7 +84,7 @@
 
   function show(view) {
     state.view = view;
-    ["editor", "runs", "library", "device", "agent"].forEach((name) => {
+    ["editor", "output", "runs", "library", "device", "agent"].forEach((name) => {
       $("view-" + name).hidden = name !== view;
     });
     document.querySelectorAll("#nav button").forEach((button) => {
@@ -379,7 +379,7 @@
   async function runSaved(id) {
     const script = await invoke("getScript", { id: id });
     await startRun(script.name, script.source, script.id, null);
-    show("runs");
+    show("output");
   }
 
   async function startRun(name, source, scriptId, originDir) {
@@ -396,6 +396,7 @@
 
   async function runEditor() {
     await startRun(state.name || "untitled.py", editor.getValue(), state.editorId, state.originDir);
+    show("output");
   }
 
   async function save() {
@@ -619,6 +620,9 @@
 
   document.querySelectorAll("#nav button").forEach((button) => {
     button.addEventListener("click", () => show(button.dataset.view));
+  });
+  document.querySelectorAll("[data-close]").forEach((button) => {
+    button.addEventListener("click", () => show("editor"));
   });
   $("script-name").addEventListener("input", () => {
     state.name = $("script-name").value;

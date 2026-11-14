@@ -15,6 +15,8 @@
 
 * { box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   height: 100%;
@@ -125,11 +127,17 @@ section {
   flex-direction: column;
 }
 
-.toolbar, .output-bar {
+.toolbar, .output-bar, .view-head {
   display: flex;
   gap: 8px;
   align-items: center;
   padding: 10px 12px;
+  flex: none;
+}
+
+.view-head {
+  border-bottom: 1px solid var(--line);
+  font-weight: 650;
 }
 
 .toolbar input { flex: 1; min-width: 0; }
@@ -141,25 +149,45 @@ section {
   font-size: 12px;
 }
 
-#editor-wrap, .split {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-}
-
-#editor { flex: 1.4; min-width: 0; min-height: 0; }
-
-#editor-output, .log-pane {
+#editor {
   flex: 1;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--line);
+}
+
+.cm-editor { flex: 1; min-height: 0; }
+.cm-scroller { overflow: auto; }
+
+.split {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.log-pane, #view-output {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   background: #10130c;
 }
 
-#run-list, #lib-list, #device, .prose {
+.log-pane { border-left: 1px solid var(--line); }
+
+#run-list {
+  flex: 0.8;
+  min-width: 220px;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 12px 16px;
+}
+
+#lib-list, #device, #agent {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 8px 12px 24px;
 }
@@ -250,20 +278,18 @@ pre {
     gap: 6px;
   }
   .brand { display: none; }
-  #nav { flex-direction: row; flex: 1; }
+  #nav { flex-direction: row; flex: 1; overflow-x: auto; }
   #nav button {
-    flex: 1;
+    flex: 1 0 auto;
     text-align: center;
-    padding: 8px 4px;
-    font-size: 13px;
+    padding: 8px 6px;
+    font-size: 12px;
   }
-  #editor-wrap, .split { flex-direction: column; }
-  #editor { min-height: 180px; }
-  #editor-output, .log-pane {
+  .split { flex-direction: column; }
+  #run-list { flex: none; max-height: 32%; min-width: 0; }
+  .log-pane {
     border-left: 0;
     border-top: 1px solid var(--line);
-    height: 34%;
-    flex: none;
+    flex: 1;
   }
-  #run-list { max-height: 40%; }
 }
