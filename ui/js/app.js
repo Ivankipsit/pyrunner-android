@@ -92,9 +92,10 @@
     document.querySelectorAll("#nav button").forEach((button) => {
       button.classList.toggle("active", button.dataset.view === view);
     });
-    if (view === "library") renderLibrary();
+    if (view === "library") hydrateLibrary().catch(showError);
     if (view === "device") renderDevice();
     if (view === "runs") renderRuns();
+    if (view === "agent") renderAgent().catch(showError);
   }
 
   function updateNav() {
@@ -312,44 +313,71 @@
     return span;
   }
 
+  function runClock(run) {
+    const start = run.startedAt || run.createdAt;
+    if (!start) return "";
+    const end = run.finishedAt || Date.now();
+    const sec = Math.max(0, Math.round((end - start) / 1000));
+    if (sec < 60) return sec + "s";
+    return Math.floor(sec / 60) + "m " + (sec % 60) + "s";
+  }
+
   function renderRuns() {
     const list = $("run-list");
+    const signature = state.runs.map((run) => run.id + ":" + run.status + ":" + (run.id === state.activeRunId)).join("|");
+    if (list.dataset.signature === signature) {
+      state.runs.forEach((run) => {
+        const clock = list.querySelector('[data-clock="' + run.id + '"]');
+        if (clock) clock.textContent = runClock(run);
+      });
+      return;
+    }
+    list.dataset.signature = signature;
     list.textContent = "";
     if (!state.runs.length) {
       const empty = document.createElement("p");
       empty.className = "note";
-      empty.textContent = "No runs yet. Start one from the editor.";
+      empty.textContent = "No runs yet. Press Run in the editor. The log for the one you select is shown beside this list.";
       list.append(empty);
       return;
     }
     state.runs.forEach((run) => {
-      const row = document.createElement("div");
-      row.className = "run-row" + (run.id === state.activeRunId ? " selected" : "");
-      row.dataset.id = run.id;
+      const card = document.createElement("article");
+      card.className = "run-card" + (run.id === state.activeRunId ? " selected" : "");
+      const top = document.createElement("div");
+      top.className = "top";
       const name = document.createElement("button");
       name.type = "button";
       name.className = "name";
       name.textContent = run.name;
-      name.addEventListener("click", () => {
-        state.activeRunId = run.id;
-        ensureLog(run.id);
-        renderRuns();
-        renderLogs();
-        refreshArtifacts(run.id).catch(() => {});
-      });
-      const stop = document.createElement("button");
-      stop.type = "button";
-      stop.textContent = "Stop";
+      name.addEventListener("click", () => selectRun(run.id));
+      top.append(name, pill(run.status));
+      const meta = document.createElement("div");
+      meta.className = "run-time";
+      meta.dataset.clock = run.id;
+      meta.textContent = runClock(run);
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      const stop = button("Stop", () => act("stop", run.id));
       stop.disabled = run.status !== "running" && run.status !== "stopping";
-      stop.addEventListener("click", () => act("stop", run.id));
-      const kill = document.createElement("button");
-      kill.type = "button";
-      kill.textContent = "Kill";
+      const kill = button("Kill", () => act("kill", run.id));
       kill.disabled = run.status !== "running" && run.status !== "stopping" && run.status !== "queued";
-      kill.addEventListener("click", () => act("kill", run.id));
-      row.append(name, pill(run.status), stop, kill);
-      list.append(row);
+      const output = button("Output", () => {
+        selectRun(run.id);
+        show("output");
+      });
+      actions.append(stop, kill, output);
+      card.append(top, meta, actions);
+      list.append(card);
     });
+  }
+
+  function selectRun(runId) {
+    state.activeRunId = runId;
+    ensureLog(runId);
+    renderRuns();
+    renderLogs();
+    refreshArtifacts(runId).catch(() => {});
   }
 
   async function act(method, runId) {
@@ -359,6 +387,15 @@
     } catch (err) {
       showError(err);
     }
+  }
+
+  async function hydrateLibrary() {
+    for (const script of state.scripts) {
+      if (script.source != null) continue;
+      const full = await invoke("getScript", { id: script.id });
+      script.source = full.source || "";
+    }
+    renderLibrary();
   }
 
   function renderLibrary() {
@@ -373,6 +410,7 @@
       list.append(empty);
       return;
     }
+    const canInstall = Boolean(state.caps && state.caps.features && state.caps.features.pipRuntime);
     rows.forEach((script) => {
       const row = document.createElement("div");
       row.className = "lib-row";
@@ -385,9 +423,39 @@
       const run = button("Run", () => runSaved(script.id).catch(showError));
       const rename = button("Rename", () => beginRename(row, script));
       const remove = button("Delete", () => removeScript(row, script, remove).catch(showError));
-      row.append(name, open, run, rename, remove);
+      const pkgs = document.createElement("div");
+      pkgs.className = "lib-pkgs";
+      const needed = window.PyRunnerGuide ? window.PyRunnerGuide.scriptPackages(script.source || "") : [];
+      if (!needed.length && script.source != null) {
+        const none = document.createElement("span");
+        none.className = "pkg-chip";
+        none.textContent = "No extra packages";
+        pkgs.append(none);
+      }
+      needed.forEach((pkg) => {
+        const ready = packageReady(pkg);
+        if (ready) {
+          const chip = document.createElement("span");
+          chip.className = "pkg-chip yes";
+          chip.textContent = pkg + " ready";
+          pkgs.append(chip);
+        } else if (canInstall) {
+          pkgs.append(button("Install " + pkg, () => installPackage(pkg).catch(showError)));
+        } else {
+          const chip = document.createElement("span");
+          chip.className = "pkg-chip no";
+          chip.textContent = pkg + " is not in this app";
+          pkgs.append(chip);
+        }
+      });
+      row.append(name, open, run, rename, remove, pkgs);
       list.append(row);
     });
+  }
+
+  function packageReady(name) {
+    const rows = (state.caps && state.caps.packages) || [];
+    return rows.some((pkg) => String(pkg.name || "").toLowerCase().replace(/_/g, "-") === name && pkg.installed !== false);
   }
 
   function button(label, onClick) {
@@ -425,8 +493,15 @@
   }
 
   async function refreshScripts() {
+    const previous = {};
+    state.scripts.forEach((script) => {
+      if (script.source != null) previous[script.id] = script.source;
+    });
     state.scripts = await invoke("listScripts");
-    renderLibrary();
+    state.scripts.forEach((script) => {
+      if (previous[script.id] != null) script.source = previous[script.id];
+    });
+    if (state.view === "library") await hydrateLibrary();
   }
 
   async function loadScript(id) {
@@ -473,6 +548,11 @@
     state.dirty = false;
     showDirty();
     await refreshScripts();
+    const current = editor.getValue();
+    state.scripts.forEach((script) => {
+      if (script.id === saved.id) script.source = current;
+    });
+    if (state.view === "library") renderLibrary();
   }
 
   function fresh() {
@@ -496,18 +576,151 @@
     show("editor");
   }
 
-  function renderAgent() {
+  async function renderAgent() {
     const root = $("agent");
+    const guide = window.PyRunnerGuide;
+    let remote = { ollama: false, selected: "builtin", installed: [], pulling: null };
+    try {
+      const status = await invoke("agentStatus");
+      if (status && typeof status === "object") remote = status;
+    } catch (err) {
+      remote.error = err.message || String(err);
+    }
+    const selected = remote.selected || "builtin";
+    state.agentModel = selected;
     root.textContent = "";
-    const title = document.createElement("h2");
-    title.textContent = "Coding agent";
-    const body = document.createElement("p");
-    body.className = "note";
+    root.append(heading("How to ask"));
+    root.append(note("Type a question below. The built-in helper answers on this device. On Windows, download a model first if you want that model to answer. Switch models in the list. Delete removes a download from this PC."));
+    root.append(heading("How to scrape"));
+    root.append(note("Insert scraper, change the URL, then press Run. Output shows printed links and saved images while the script runs. requests and beautifulsoup4 are already included. Missing packages are listed in Library."));
+    const insert = button("Insert scraper", () => {
+      if (!editor || !guide) return;
+      setEditorValue(guide.SCRAPE);
+      setName("scrape.py");
+      state.dirty = true;
+      showDirty();
+      show("editor");
+    });
+    root.append(insert);
+
+    root.append(heading("Models"));
     const android = state.caps && state.caps.platform === "android";
-    body.textContent = android
-      ? "A later version will run a small model on this phone with llama.cpp. Qwen2.5-Coder 3B is the candidate, sized for a phone with 12 GB of RAM. This build does not download or run a model, and it does not call a cloud model."
-      : "A later version will run a larger local model through llama.cpp, or through Ollama bound to 127.0.0.1. This build does not download or run a model, and it does not call a cloud model.";
-    root.append(title, body);
+    if (android) {
+      root.append(note("This phone uses the built-in helper. Qwen2.5-Coder downloads in the Windows app, through Ollama on 127.0.0.1."));
+    } else if (!remote.ollama) {
+      root.append(note("Ollama is not running at 127.0.0.1:11434. Install it on this PC, start it, then come back to download a model. The built-in helper still works."));
+    }
+    (guide ? guide.MODELS : []).forEach((model) => {
+      const card = document.createElement("article");
+      card.className = "run-card" + (model.id === selected ? " selected" : "");
+      const top = document.createElement("div");
+      top.className = "top";
+      const name = document.createElement("span");
+      name.className = "name";
+      name.textContent = model.label + " · " + model.size;
+      top.append(name);
+      card.append(top, note(model.detail));
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      const use = button(model.id === selected ? "Selected" : "Use", () => chooseModel(model.id).catch(showError));
+      use.disabled = model.id === selected || (android && model.id !== "builtin");
+      actions.append(use);
+      const installed = model.id === "builtin" || (remote.installed || []).indexOf(model.id) !== -1;
+      if (model.id !== "builtin") {
+        const download = button(installed ? "Downloaded" : "Download", () => pullModel(model.id).catch(showError));
+        download.disabled = installed || android;
+        const remove = button("Delete", () => deleteModel(model.id).catch(showError));
+        remove.disabled = !installed || android;
+        actions.append(download, remove);
+      }
+      card.append(actions);
+      root.append(card);
+    });
+    if (remote.pulling && remote.pulling.status) {
+      root.append(note("Download " + remote.pulling.id + ": " + remote.pulling.status + (remote.pulling.error ? " " + remote.pulling.error : "")));
+    }
+
+    root.append(heading("Ask"));
+    const form = document.createElement("form");
+    form.className = "pip-form";
+    const input = document.createElement("input");
+    input.id = "agent-prompt";
+    input.placeholder = "How do I scrape the links on a page?";
+    input.setAttribute("aria-label", "Question for the agent");
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.className = "primary";
+    submit.textContent = "Ask";
+    form.append(input, submit);
+    const reply = document.createElement("pre");
+    reply.id = "agent-reply";
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      askAgent(input.value, reply).catch(showError);
+    });
+    root.append(form, reply);
+    if (state.agentReply) reply.textContent = state.agentReply;
+    if (remote.pulling && remote.pulling.status === "running") {
+      setTimeout(() => {
+        if (state.view === "agent") renderAgent().catch(() => {});
+      }, 1000);
+    }
+  }
+
+  async function chooseModel(id) {
+    if (id === "builtin" || (state.caps && state.caps.platform === "android")) {
+      state.agentModel = "builtin";
+      if (state.caps && state.caps.platform !== "android") await invoke("agentSelect", { id: id });
+      await renderAgent();
+      return;
+    }
+    await invoke("agentSelect", { id: id });
+    await renderAgent();
+  }
+
+  async function pullModel(id) {
+    await invoke("agentPull", { id: id });
+    await renderAgent();
+  }
+
+  async function deleteModel(id) {
+    await invoke("agentDelete", { id: id });
+    await renderAgent();
+  }
+
+  async function askAgent(prompt, reply) {
+    const guide = window.PyRunnerGuide;
+    const model = state.agentModel || "builtin";
+    reply.textContent = "Asking…";
+    let result;
+    if (model === "builtin" || !guide) {
+      result = guide.builtinReply(prompt);
+    } else {
+      const remote = await invoke("agentAsk", {
+        id: model,
+        prompt: prompt,
+        script: editor ? editor.getValue() : "",
+      });
+      result = { text: remote.text || "", code: pythonBlock(remote.text || "") };
+    }
+    state.agentReply = result.text || "";
+    reply.textContent = state.agentReply || "No reply.";
+    $("agent").querySelectorAll(".use-code").forEach((el) => el.remove());
+    if (result.code) {
+      const use = button("Use this code", () => {
+        setEditorValue(result.code);
+        state.dirty = true;
+        showDirty();
+        show("editor");
+      });
+      use.className = "use-code";
+      reply.insertAdjacentElement("afterend", use);
+    }
+  }
+
+  function pythonBlock(text) {
+    const match = /```python\n([\s\S]*?)```/.exec(text || "") || /```\n([\s\S]*?)```/.exec(text || "");
+    return match ? match[1].replace(/\s+$/, "") + "\n" : "";
   }
 
   function renderDevice() {
@@ -626,13 +839,24 @@
 
   async function installPackage(spec) {
     const output = $("pip-output");
+    const libraryOutput = $("lib-pip");
     if (output) output.textContent = "Installing…";
+    if (libraryOutput) {
+      libraryOutput.hidden = false;
+      libraryOutput.textContent = "Installing " + spec + "…";
+    }
     const result = await invoke("pipInstall", { spec: spec });
     if (output) output.textContent = result.output || "Installed " + result.spec;
     state.caps = await invoke("capabilities");
     renderDevice();
     const freshOutput = $("pip-output");
     if (freshOutput) freshOutput.textContent = result.output || "Installed " + result.spec;
+    const libraryOutputDone = $("lib-pip");
+    if (libraryOutputDone) {
+      libraryOutputDone.hidden = false;
+      libraryOutputDone.textContent = result.output || "Installed " + result.spec;
+    }
+    await hydrateLibrary();
   }
 
   async function setMode(mode) {
@@ -715,6 +939,7 @@
 
   setInterval(() => {
     const run = state.runs.find((item) => item.id === state.activeRunId);
+    if (state.view === "runs") renderRuns();
     if (!run) return;
     if (run.status === "running" || run.status === "queued" || run.status === "stopping") {
       refreshArtifacts(run.id).catch(() => {});

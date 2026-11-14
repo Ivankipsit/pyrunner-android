@@ -29,7 +29,7 @@ def test_capabilities_shape(tmp_path: Path):
         assert features["hardKill"] is True
         assert features["pipRuntime"] is True
         assert features["foregroundService"] is False
-        assert features["localAgent"] is False
+        assert features["localAgent"] is True
         assert features["playwright"] in (True, False)
         for method in METHODS:
             assert isinstance(method, str)
@@ -80,10 +80,10 @@ def test_unknown_method_and_bad_pip_spec(tmp_path: Path):
 
 def test_ui_has_no_remote_urls():
     ui = Path(__file__).resolve().parents[2] / "ui"
-    for relative in ("index.html", "js/app.js", "js/live.js", "css/app.css"):
+    import re
+    for relative in ("index.html", "js/app.js", "js/live.js", "js/guide.js", "css/app.css"):
         text = (ui / relative).read_text(encoding="utf-8").lower()
-        assert "http://" not in text
-        assert "https://" not in text
         assert "xmlhttprequest" not in text
-        import re
         assert re.search(r"(?<![a-z])fetch\s*\(", text) is None
+        urls = re.findall(r"https?://[^\s\"')]+", text)
+        assert set(urls) <= {"https://example.com"}, urls
