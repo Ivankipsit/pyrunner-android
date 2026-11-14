@@ -1,6 +1,10 @@
 # PyRunner
 
-PyRunner runs Python you type or open: scrapers and small scripts, several at once, with a live log. There is an Android app and a Windows app. They share one UI (`ui/`). The phone build is sideloaded. The Windows build is a portable folder.
+**[Download the Android app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.0/pyrunner-android-0.1.0.apk)** (sideload APK) · **[Download the Windows app](https://github.com/Ivankipsit/pyrunner-android/releases/download/v0.1.0/PyRunner-windows-0.1.0.zip)** (portable zip) · [Release 0.1.0](https://github.com/Ivankipsit/pyrunner-android/releases/tag/v0.1.0)
+
+Current version is **0.1.0**. What shipped, and what **0.2.0** will add, is in [CHANGELOG.md](CHANGELOG.md).
+
+PyRunner runs Python you type or open: scrapers and small scripts, several at once, with a live log. There is an Android app and a Windows app. They share one UI (`ui/`). The phone build is sideloaded. The Windows build is a portable folder. Unzip the Windows download and run `PyRunner.cmd`. On the phone, allow installs from your file manager, or `adb install -r pyrunner-android-0.1.0.apk`.
 
 Nothing in the app phones home. There is no analytics SDK and no crash reporter. The UI is bundled; it does not load a CDN. The Android UI WebView refuses any non-bundled URL. A script you run can still use the network. That is the script, not the app.
 
@@ -152,10 +156,10 @@ The Gradle build copies `ui/`, `runtime/`, and `examples/` into the APK. Don't e
 - The Windows host passes its own environment into the script. If that environment has secrets, the script can read them. The app does not add any of its own.
 - Logs and scripts are local files. They are not in git (see `.gitignore`).
 
-## Not in this milestone
+## Main branch
 
-- The coding agent (screen only).
-- A hidden WebView that renders JS-heavy pages for Android scripts.
-- Runtime installs of pure-Python packages on Android.
-- Play Store listing. Sideload only.
-- A signed release APK.
+`main` accepts changes through a pull request. These checks have to pass before merge: `apk`, `test`, and `package`. Force-pushes and deleting `main` are not allowed. That ruleset is [`.github/rulesets/main.json`](.github/rulesets/main.json). GitHub has not enforced the file on the private repo yet: creating a repository ruleset from here was rejected (the list API asks for GitHub Pro, and this token cannot administer rules).
+
+## Not in 0.1.0
+
+Moved to the [changelog](CHANGELOG.md#next-020). The coding agent is still a placeholder, Android has no signed release APK and no Play Store listing, and JS-heavy pages are not rendered for Android scripts yet.
